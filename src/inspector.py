@@ -109,12 +109,55 @@ def _find_questions_list(elem: Any) -> List[Any]:
     return []
 
 
+def extract_form_images(soup: BeautifulSoup):
+    """Extract question-level images and option-level images from Google Form DOM."""
+    question_images = {}
+    option_images_by_text = {}
+    option_images_by_index = {}
+
+    items = soup.find_all("div", role="listitem")
+    for it in items:
+        heading = it.find("div", role="heading")
+        if not heading:
+            continue
+        q_title_clean = heading.get_text(strip=True).rstrip("*").strip().lower()
+
+        opt_list = []
+        for img in it.find_all("img"):
+            src = img.get("src", "")
+            if not src or "googlelogo" in src or "cleardot" in src or src.startswith("data:image/svg"):
+                continue
+
+            opt_text = None
+            curr = img.parent
+            while curr and curr != it:
+                classes = curr.get("class", [])
+                if any("Toggle" in c or "Radio" in c or "Checkbox" in c or "Option" in c or "choice" in c.lower() for c in classes) or curr.get("role") in ["radio", "checkbox"]:
+                    opt_text = curr.get_text(strip=True)
+                    break
+                curr = curr.parent
+
+            if opt_text:
+                clean_opt = opt_text.strip().lower()
+                option_images_by_text[(q_title_clean, clean_opt)] = src
+                opt_list.append(src)
+            else:
+                if q_title_clean not in question_images:
+                    question_images[q_title_clean] = src
+
+        if opt_list:
+            option_images_by_index[q_title_clean] = opt_list
+
+    return question_images, option_images_by_text, option_images_by_index
+
+
 def parse_form_html(html: str) -> Dict[str, Any]:
-    """Parse Google Form HTML and extract questions via FB_PUBLIC_LOAD_DATA_."""
+    """Parse Google Form HTML and extract questions, images, and option images via FB_PUBLIC_LOAD_DATA_ and DOM."""
     fields = {}
     form_title = "Untitled Form"
     form_description = ""
     collects_email = False
+    header_image = None
 
     soup = BeautifulSoup(html, "html.parser")
     title_elem = soup.find("meta", property="og:title")
@@ -125,9 +168,19 @@ def parse_form_html(html: str) -> Dict[str, Any]:
     if desc_elem and desc_elem.get("content"):
         form_description = desc_elem["content"]
 
+    # Check for header image
+    for div in soup.find_all(lambda tag: tag.has_attr("style") and "background-image" in tag.get("style", "")):
+        m = re.search(r'url\(["\']?(https?://[^"\')]+)["\']?\)', div["style"])
+        if m:
+            header_image = m.group(1)
+            break
+
     # Check for email input in HTML
     if soup.find("input", {"name": "emailAddress"}):
         collects_email = True
+
+    # Extract images from DOM
+    q_imgs, opt_text_imgs, opt_idx_imgs = extract_form_images(soup)
 
     # Search for FB_PUBLIC_LOAD_DATA_
     match = re.search(r"FB_PUBLIC_LOAD_DATA_\s*=\s*(.*?);\s*</script>", html, re.DOTALL)
@@ -136,6 +189,7 @@ def parse_form_html(html: str) -> Dict[str, Any]:
             "title": form_title,
             "description": form_description,
             "collects_email": collects_email,
+            "header_image": header_image,
             "fields": fields
         }
 
@@ -147,12 +201,12 @@ def parse_form_html(html: str) -> Dict[str, Any]:
             "title": form_title,
             "description": form_description,
             "collects_email": collects_email,
+            "header_image": header_image,
             "fields": fields,
             "error": f"Failed to decode form data: {e}"
         }
 
     # Locate questions list in data
-    # In some forms, questions are in data[1][1], in others data[1], or deeper
     questions = []
     if len(data) > 1 and data[1]:
         questions = _find_questions_list(data[1])
@@ -161,9 +215,11 @@ def parse_form_html(html: str) -> Dict[str, Any]:
 
     for item in questions:
         q_title = item[1] or "Untitled Question"
+        clean_title = q_title.rstrip("*").strip().lower()
         q_desc = item[2] or ""
         q_type_code = item[3] if len(item) > 3 else -1
         q_type = QUESTION_TYPES.get(q_type_code, f"Type {q_type_code}")
+        q_img = q_imgs.get(clean_title)
 
         # Sub-payload containing entry IDs
         sub_info = item[4]
@@ -187,19 +243,32 @@ def parse_form_html(html: str) -> Dict[str, Any]:
 
             is_required = bool(sub[2] == 1 if len(sub) > 2 else False)
 
+            # Match option images
+            opt_images = {}
+            for idx, opt in enumerate(options):
+                clean_o = opt.strip().lower()
+                img_url = opt_text_imgs.get((clean_title, clean_o))
+                if not img_url and clean_title in opt_idx_imgs and idx < len(opt_idx_imgs[clean_title]):
+                    img_url = opt_idx_imgs[clean_title][idx]
+                if img_url:
+                    opt_images[opt] = img_url
+
             fields[entry_key] = {
                 "id": entry_key,
                 "title": q_title,
                 "description": q_desc,
                 "type": q_type,
                 "required": is_required,
-                "options": options
+                "options": options,
+                "image": q_img,
+                "option_images": opt_images
             }
 
     return {
         "title": form_title,
         "description": form_description,
         "collects_email": collects_email,
+        "header_image": header_image,
         "fields": fields
     }
 
@@ -262,6 +331,7 @@ def inspect_google_form(url: str) -> Dict[str, Any]:
         "response_url": response_url,
         "title": html_data.get("title", "Google Form"),
         "description": html_data.get("description", ""),
+        "header_image": html_data.get("header_image"),
         "collects_email": html_data.get("collects_email", False) or bool(prefilled_data.get("email")),
         "prefilled_email": prefilled_data.get("email"),
         "fields": merged_fields

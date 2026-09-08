@@ -63,3 +63,48 @@ def test_parse_form_html_with_mock():
     assert "entry.11223344" in res["fields"]
     assert res["fields"]["entry.11223344"]["options"] == ["Alpha", "Beta"]
     assert res["fields"]["entry.11223344"]["type"] == "Multiple choice"
+
+
+def test_parse_form_html_with_images():
+    mock_fb_data = [
+        "Image Survey Form",
+        [
+            [
+                2001,
+                "Who is this player?",
+                "",
+                2,
+                [[55667788, [["Messi"], ["Ronaldo"]], 0]]
+            ]
+        ]
+    ]
+
+    mock_html = f"""
+    <html>
+      <head><meta property="og:title" content="Football Quiz"></head>
+      <body>
+        <div style="background-image: url('https://docs.google.com/forms-images-rt/header-banner.png');"></div>
+        <div role="listitem">
+          <div role="heading">Who is this player?</div>
+          <div role="radio">
+            <span>Messi</span>
+            <img src="https://docs.google.com/forms-images-rt/messi_thumb.png">
+          </div>
+          <div role="radio">
+            <span>Ronaldo</span>
+            <img src="https://docs.google.com/forms-images-rt/ronaldo_thumb.png">
+          </div>
+        </div>
+        <script>
+          var FB_PUBLIC_LOAD_DATA_ = {json.dumps(mock_fb_data)};
+        </script>
+      </body>
+    </html>
+    """
+
+    res = parse_form_html(mock_html)
+    assert res["header_image"] == "https://docs.google.com/forms-images-rt/header-banner.png"
+    field = res["fields"]["entry.55667788"]
+    assert field["option_images"].get("Messi") == "https://docs.google.com/forms-images-rt/messi_thumb.png"
+    assert field["option_images"].get("Ronaldo") == "https://docs.google.com/forms-images-rt/ronaldo_thumb.png"
+
