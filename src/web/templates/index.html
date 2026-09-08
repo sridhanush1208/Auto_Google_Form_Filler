@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auto Google Form Filler Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: { 50: '#eef2ff', 100: '#e0e7ff', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca' }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans">
+
+  <!-- Header Navbar -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-md shadow-indigo-100">
+          <i class="fa-solid fa-bolt text-lg"></i>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold text-slate-900 leading-tight">Auto Google Form Filler</h1>
+          <p class="text-xs text-slate-500">Autonomous Cloud & Scheduled Submissions</p>
+        </div>
+      </div>
+      <div class="flex items-center space-x-3">
+        <a href="https://github.com/sridhanush1208/Auto_Google_Form_Filler" target="_blank" class="inline-flex items-center px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-medium text-slate-700 hover:bg-slate-50 transition">
+          <i class="fa-brands fa-github mr-2"></i> GitHub Repository
+        </a>
+        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span> Ready
+        </span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full flex flex-col md:flex-row gap-8">
+    
+    <!-- Sidebar Navigation -->
+    <aside class="w-full md:w-64 shrink-0 space-y-2">
+      <nav class="space-y-1 bg-white p-3 rounded-2xl border border-slate-200 shadow-sm">
+        <button onclick="switchTab('inspector')" id="tab-btn-inspector" class="w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition text-indigo-700 bg-indigo-50">
+          <i class="fa-solid fa-magnifying-glass w-6 text-indigo-600"></i> Form Inspector
+        </button>
+        <button onclick="switchTab('configurator')" id="tab-btn-configurator" class="w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition text-slate-600 hover:bg-slate-50">
+          <i class="fa-solid fa-sliders w-6 text-slate-400"></i> Field Configurator
+        </button>
+        <button onclick="switchTab('scheduler')" id="tab-btn-scheduler" class="w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition text-slate-600 hover:bg-slate-50">
+          <i class="fa-solid fa-clock w-6 text-slate-400"></i> Schedule & Timezone
+        </button>
+        <button onclick="switchTab('console')" id="tab-btn-console" class="w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition text-slate-600 hover:bg-slate-50">
+          <i class="fa-solid fa-terminal w-6 text-slate-400"></i> Test & Submit
+        </button>
+        <button onclick="switchTab('notifications')" id="tab-btn-notifications" class="w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition text-slate-600 hover:bg-slate-50">
+          <i class="fa-solid fa-envelope w-6 text-slate-400"></i> Email Notifications
+        </button>
+      </nav>
+
+      <!-- Cloud Status Banner -->
+      <div class="bg-gradient-to-br from-indigo-900 to-slate-900 text-white p-4 rounded-2xl shadow-sm text-xs space-y-2">
+        <div class="flex items-center space-x-2 text-indigo-300 font-semibold uppercase tracking-wider">
+          <i class="fa-solid fa-cloud"></i>
+          <span>Autonomous Runner</span>
+        </div>
+        <p class="text-slate-300 leading-relaxed">
+          Runs on GitHub Actions 24/7. Your laptop can be closed or turned off; submissions continue autonomously.
+        </p>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 min-w-0">
+
+      <!-- Alert Notification Toast -->
+      <div id="toast" class="hidden mb-6 p-4 rounded-xl text-sm font-medium flex items-center justify-between shadow-sm transition">
+        <span id="toast-msg"></span>
+        <button onclick="hideToast()" class="ml-4 text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <!-- TAB 1: FORM INSPECTOR -->
+      <section id="tab-inspector" class="space-y-6">
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+          <div>
+            <h2 class="text-lg font-bold text-slate-900">🔍 Google Form Inspector</h2>
+            <p class="text-sm text-slate-500">Paste your Google Form URL or "Pre-filled Link". We'll automatically extract all questions, field types, and entry IDs.</p>
+          </div>
+          
+          <div class="flex gap-3">
+            <input type="text" id="inspect-url-input" placeholder="https://docs.google.com/forms/d/e/.../viewform" class="flex-1 px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <button onclick="inspectForm()" id="inspect-btn" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium shadow-sm transition flex items-center">
+              <span>Inspect Form</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Inspection Results Card -->
+        <div id="inspect-results" class="hidden bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+          <div class="flex items-start justify-between border-b border-slate-100 pb-4">
+            <div>
+              <span class="text-xs font-semibold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">Detected Form</span>
+              <h3 id="inspect-title" class="text-xl font-bold text-slate-900 mt-1"></h3>
+              <p id="inspect-desc" class="text-sm text-slate-500 mt-1"></p>
+            </div>
+            <button onclick="populateConfigFromInspection()" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-sm transition flex items-center space-x-1.5">
+              <i class="fa-solid fa-file-import"></i>
+              <span>Use in Configurator</span>
+            </button>
+          </div>
+
+          <div class="space-y-3">
+            <h4 class="text-sm font-bold text-slate-700">Detected Questions & Entry IDs:</h4>
+            <div id="inspect-fields-list" class="space-y-3"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 2: FIELD CONFIGURATOR -->
+      <section id="tab-configurator" class="hidden space-y-6">
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+            <div>
+              <h2 class="text-lg font-bold text-slate-900">📝 Field Values & Submission Settings</h2>
+              <p class="text-sm text-slate-500">Specify what values to submit. Use dynamic date helpers to automatically insert today's date.</p>
+            </div>
+            <button onclick="saveConfiguration()" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold shadow-sm transition flex items-center space-x-1.5">
+              <i class="fa-solid fa-floppy-disk"></i>
+              <span>Save Configuration</span>
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Target Form URL</label>
+              <input type="text" id="cfg-form-url" placeholder="https://docs.google.com/forms/d/e/.../viewform" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Your Submission Email</label>
+              <input type="email" id="cfg-email" placeholder="your_email@example.com" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Submission Mode</label>
+              <select id="cfg-mode" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500">
+                <option value="http">Direct HTTP POST (Recommended, fast, for public forms)</option>
+                <option value="browser">Headless Browser (Playwright, for forms requiring sign-in)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Dynamic Placeholders Helper Box -->
+          <div class="bg-indigo-50/70 border border-indigo-100 rounded-xl p-3.5 space-y-2">
+            <span class="text-xs font-bold text-indigo-900 uppercase tracking-wider flex items-center">
+              <i class="fa-solid fa-wand-magic-sparkles mr-1.5 text-indigo-600"></i> Dynamic Date Helpers (Click to copy)
+            </span>
+            {% raw %}
+            <div class="flex flex-wrap gap-2 text-xs">
+              <button onclick="copyPlaceholder('{{TODAY}}')" class="px-2.5 py-1 bg-white hover:bg-indigo-100 text-indigo-700 rounded-lg border border-indigo-200 font-mono shadow-xs transition">
+                {{TODAY}} <span class="text-slate-400 font-sans">(YYYY-MM-DD)</span>
+              </button>
+              <button onclick="copyPlaceholder('{{NOW}}')" class="px-2.5 py-1 bg-white hover:bg-indigo-100 text-indigo-700 rounded-lg border border-indigo-200 font-mono shadow-xs transition">
+                {{NOW}} <span class="text-slate-400 font-sans">(HH:MM:SS)</span>
+              </button>
+              <button onclick="copyPlaceholder('{{TODAY_FORMAT:%d/%m/%Y}}')" class="px-2.5 py-1 bg-white hover:bg-indigo-100 text-indigo-700 rounded-lg border border-indigo-200 font-mono shadow-xs transition">
+                {{TODAY_FORMAT:%d/%m/%Y}}
+              </button>
+              <button onclick="copyPlaceholder('{{DAY_NAME}}')" class="px-2.5 py-1 bg-white hover:bg-indigo-100 text-indigo-700 rounded-lg border border-indigo-200 font-mono shadow-xs transition">
+                {{DAY_NAME}}
+              </button>
+            </div>
+            {% endraw %}
+          </div>
+
+          <!-- Fields Editor -->
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <label class="text-sm font-bold text-slate-800">Form Field Values</label>
+              <button onclick="addFieldRow()" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium rounded-lg transition">
+                <i class="fa-solid fa-plus mr-1"></i> Add Custom Field
+              </button>
+            </div>
+            <div id="cfg-fields-container" class="space-y-3"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 3: SCHEDULE & TIMEZONE -->
+      <section id="tab-scheduler" class="hidden space-y-6">
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+            <div>
+              <h2 class="text-lg font-bold text-slate-900">⏰ Autonomous Schedule & Timezone Planner</h2>
+              <p class="text-sm text-slate-500">Pick days and local time. We convert it to UTC and update your GitHub Actions autonomous runner.</p>
+            </div>
+            <button onclick="saveSchedule()" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold shadow-sm transition flex items-center space-x-1.5">
+              <i class="fa-solid fa-cloud-arrow-up"></i>
+              <span>Save & Sync Schedule</span>
+            </button>
+          </div>
+
+          <!-- Timezone & Time Picker -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Select Timezone</label>
+              <select id="sched-tz" onchange="recalculateCronPreview()" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500">
+                <option value="Asia/Kolkata" selected>Asia/Kolkata (IST, UTC +5:30)</option>
+                <option value="UTC">UTC (Coordinated Universal Time)</option>
+                <option value="America/New_York">America/New_York (EST/EDT)</option>
+                <option value="America/Los_Angeles">America/Los_Angeles (PST/PDT)</option>
+                <option value="Europe/London">Europe/London (GMT/BST)</option>
+                <option value="Asia/Singapore">Asia/Singapore (SGT, UTC +8)</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Local Submission Time</label>
+              <input type="time" id="sched-time" value="09:30" onchange="recalculateCronPreview()" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500">
+            </div>
+          </div>
+
+          <!-- Days Selector Pills -->
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Active Days of Week</label>
+            <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2">
+              <label class="cursor-pointer border border-slate-200 rounded-xl p-3 flex flex-col items-center justify-center hover:bg-slate-50 transition day-pill">
+                <input type="checkbox" name="sched-day" value="Mon" checked onchange="recalculateCronPreview()" class="rounded text-indigo-600 focus:ring-indigo-500 mb-1">
+                <span class="text-xs font-bold text-slate-700">Mon</span>
+              </label>
+              <label class="cursor-pointer border border-slate-200 rounded-xl p-3 flex flex-col items-center justify-center hover:bg-slate-50 transition day-pill">
+                <input type="checkbox" name="sched-day" value="Tue" onchange="recalculateCronPreview()" class="rounded text-indigo-600 focus:ring-indigo-500 mb-1">
+                <span class="text-xs font-bold text-slate-700">Tue</span>
+              </label>
+              <label class="cursor-pointer border border-slate-200 rounded-xl p-3 flex flex-col items-center justify-center hover:bg-slate-50 transition day-pill">
+                <input type="checkbox" name="sched-day" value="Wed" checked onchange="recalculateCronPreview()" class="rounded text-indigo-600 focus:ring-indigo-500 mb-1">
+                <span class="text-xs font-bold text-slate-700">Wed</span>
+              </label>
+              <label class="cursor-pointer border border-slate-200 rounded-xl p-3 flex flex-col items-center justify-center hover:bg-slate-50 transition day-pill">
+                <input type="checkbox" name="sched-day" value="Thu" onchange="recalculateCronPreview()" class="rounded text-indigo-600 focus:ring-indigo-500 mb-1">
+                <span class="text-xs font-bold text-slate-700">Thu</span>
+              </label>
+              <label class="cursor-pointer border border-slate-200 rounded-xl p-3 flex flex-col items-center justify-center hover:bg-slate-50 transition day-pill">
+                <input type="checkbox" name="sched-day" value="Fri" checked onchange="recalculateCronPreview()" class="rounded text-indigo-600 focus:ring-indigo-500 mb-1">
+                <span class="text-xs font-bold text-slate-700">Fri</span>
+              </label>
+              <label class="cursor-pointer border border-slate-200 rounded-xl p-3 flex flex-col items-center justify-center hover:bg-slate-50 transition day-pill">
+                <input type="checkbox" name="sched-day" value="Sat" onchange="recalculateCronPreview()" class="rounded text-indigo-600 focus:ring-indigo-500 mb-1">
+                <span class="text-xs font-bold text-slate-700">Sat</span>
+              </label>
+              <label class="cursor-pointer border border-slate-200 rounded-xl p-3 flex flex-col items-center justify-center hover:bg-slate-50 transition day-pill">
+                <input type="checkbox" name="sched-day" value="Sun" onchange="recalculateCronPreview()" class="rounded text-indigo-600 focus:ring-indigo-500 mb-1">
+                <span class="text-xs font-bold text-slate-700">Sun</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Live Cron Schedule Preview Card -->
+          <div class="bg-slate-900 text-white p-5 rounded-2xl space-y-3 font-mono text-xs">
+            <div class="flex items-center justify-between text-slate-400 font-sans">
+              <span class="font-semibold uppercase tracking-wider text-xs">Generated GitHub Actions Cron</span>
+              <span id="cron-utc-time" class="text-indigo-400">04:00 UTC</span>
+            </div>
+            <div class="text-xl text-emerald-400 font-bold tracking-widest bg-slate-800/80 px-4 py-2.5 rounded-xl border border-slate-700 flex items-center justify-between">
+              <span id="cron-expr-display">0 4 * * 1,3,5</span>
+              <span class="text-xs font-normal text-slate-400 font-sans">POSIX Cron</span>
+            </div>
+            <p id="cron-summary" class="text-slate-300 font-sans text-xs">
+              Runs at 09:30 AM IST on Mon, Wed, Fri (even when laptop is closed)
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 4: TEST & SUBMIT CONSOLE -->
+      <section id="tab-console" class="hidden space-y-6">
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+          <div>
+            <h2 class="text-lg font-bold text-slate-900">🧪 Submission Console & Live Verification</h2>
+            <p class="text-sm text-slate-500">Run a simulated Dry-Run to inspect the payload, or perform an instant live submission.</p>
+          </div>
+
+          <div class="flex flex-wrap gap-4">
+            <button onclick="runSubmission(true)" id="btn-dry-run" class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-sm font-semibold shadow-sm transition flex items-center space-x-2">
+              <i class="fa-solid fa-vial"></i>
+              <span>Simulate (Dry-Run)</span>
+            </button>
+            <button onclick="runSubmission(false)" id="btn-live-submit" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold shadow-sm transition flex items-center space-x-2">
+              <i class="fa-solid fa-paper-plane"></i>
+              <span>Live Submit Now</span>
+            </button>
+          </div>
+
+          <!-- Console Output Box -->
+          <div class="space-y-2">
+            <label class="text-xs font-bold text-slate-700 uppercase">Execution Output</label>
+            <div id="console-output" class="bg-slate-900 text-emerald-400 p-4 rounded-xl font-mono text-xs overflow-x-auto min-h-[220px] max-h-[400px] whitespace-pre-wrap border border-slate-800">
+Ready. Click "Simulate (Dry-Run)" or "Live Submit Now" to execute.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 5: EMAIL NOTIFICATIONS -->
+      <section id="tab-notifications" class="hidden space-y-6">
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+            <div>
+              <h2 class="text-lg font-bold text-slate-900">📧 Email Alert Settings</h2>
+              <p class="text-sm text-slate-500">Receive an email when the form is submitted or if any error occurs.</p>
+            </div>
+            <button onclick="sendTestEmail()" id="btn-test-email" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-sm transition flex items-center space-x-1.5">
+              <i class="fa-solid fa-paper-plane"></i>
+              <span>Send Test Email</span>
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase mb-1">SMTP Host</label>
+              <input type="text" id="smtp-host" placeholder="smtp.gmail.com" value="smtp.gmail.com" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase mb-1">SMTP Port</label>
+              <input type="number" id="smtp-port" placeholder="587" value="587" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Sender Email / Username</label>
+              <input type="email" id="smtp-user" placeholder="your_email@gmail.com" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase mb-1">App Password</label>
+              <input type="password" id="smtp-pass" placeholder="16-character Google App Password" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300">
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Alert Recipient Email</label>
+              <input type="email" id="smtp-recipient" placeholder="recipient@gmail.com" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300">
+            </div>
+          </div>
+
+          <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs text-amber-800 space-y-1">
+            <p class="font-bold flex items-center"><i class="fa-solid fa-shield-halved mr-1.5"></i> Security Note for GitHub Actions:</p>
+            <p>For autonomous runs on GitHub, add these values to your GitHub repository under <strong>Settings &gt; Secrets and variables &gt; Actions</strong> as repository secrets (<code>SMTP_HOST</code>, <code>SMTP_PORT</code>, <code>SMTP_USER</code>, <code>SMTP_PASSWORD</code>, <code>ALERT_RECIPIENT_EMAIL</code>).</p>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script>
+    let currentConfig = {};
+    let inspectedData = null;
+
+    function switchTab(tabId) {
+      const tabs = ['inspector', 'configurator', 'scheduler', 'console', 'notifications'];
+      tabs.forEach(t => {
+        document.getElementById(`tab-${t}`).classList.add('hidden');
+        const btn = document.getElementById(`tab-btn-${t}`);
+        btn.classList.remove('bg-indigo-50', 'text-indigo-700');
+        btn.classList.add('text-slate-600');
+      });
+      document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+      const activeBtn = document.getElementById(`tab-btn-${tabId}`);
+      activeBtn.classList.add('bg-indigo-50', 'text-indigo-700');
+      activeBtn.classList.remove('text-slate-600');
+    }
+
+    function showToast(msg, isSuccess = true) {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toast-msg');
+      toast.className = `mb-6 p-4 rounded-xl text-sm font-medium flex items-center justify-between shadow-sm transition ${isSuccess ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-rose-50 text-rose-800 border border-rose-200'}`;
+      toastMsg.innerText = msg;
+      toast.classList.remove('hidden');
+      setTimeout(hideToast, 5000);
+    }
+
+    function hideToast() {
+      document.getElementById('toast').classList.add('hidden');
+    }
+
+    function copyPlaceholder(text) {
+      navigator.clipboard.writeText(text);
+      showToast(`Copied "${text}" to clipboard!`);
+    }
+
+    // Inspect Form
+    async function inspectForm() {
+      const url = document.getElementById('inspect-url-input').value.trim();
+      if (!url) {
+        showToast('Please enter a Google Form URL', false);
+        return;
+      }
+      const btn = document.getElementById('inspect-btn');
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Inspecting...';
+      btn.disabled = true;
+
+      try {
+        const res = await fetch('/api/inspect', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Failed to inspect form');
+
+        inspectedData = data;
+        renderInspectionResults(data);
+        showToast(`Successfully inspected form: ${data.title}`);
+      } catch (err) {
+        showToast(err.message, false);
+      } finally {
+        btn.innerHTML = '<span>Inspect Form</span>';
+        btn.disabled = false;
+      }
+    }
+
+    function renderInspectionResults(data) {
+      document.getElementById('inspect-results').classList.remove('hidden');
+      document.getElementById('inspect-title').innerText = data.title || 'Google Form';
+      document.getElementById('inspect-desc').innerText = data.description || `Response Endpoint: ${data.response_url}`;
+
+      const list = document.getElementById('inspect-fields-list');
+      list.innerHTML = '';
+
+      for (const [key, field] of Object.entries(data.fields)) {
+        const item = document.createElement('div');
+        item.className = 'p-3.5 bg-slate-50 rounded-xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2';
+        
+        let opts = '';
+        if (field.options && field.options.length) {
+          opts = `<div class="text-xs text-slate-400 mt-1">Options: ${field.options.join(', ')}</div>`;
+        }
+
+        item.innerHTML = `
+          <div>
+            <div class="flex items-center space-x-2">
+              <span class="font-bold text-sm text-slate-900">${field.title}</span>
+              ${field.required ? '<span class="text-xs font-semibold text-rose-500 bg-rose-50 px-2 py-0.5 rounded">Required</span>' : ''}
+              <span class="text-xs text-slate-500 bg-white px-2 py-0.5 rounded border border-slate-200">${field.type}</span>
+            </div>
+            ${opts}
+          </div>
+          <div class="font-mono text-xs font-semibold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-lg shrink-0 border border-indigo-100">
+            ${key}
+          </div>
+        `;
+        list.appendChild(item);
+      }
+    }
+
+    function populateConfigFromInspection() {
+      if (!inspectedData) return;
+      document.getElementById('cfg-form-url').value = inspectedData.form_url || '';
+      if (inspectedData.prefilled_email) {
+        document.getElementById('cfg-email').value = inspectedData.prefilled_email;
+      }
+
+      const container = document.getElementById('cfg-fields-container');
+      container.innerHTML = '';
+
+      for (const [key, field] of Object.entries(inspectedData.fields)) {
+        let defaultVal = field.prefilled_value || '';
+        if (field.type === 'Date') defaultVal = '{{TODAY}}';
+        renderFieldRow(key, defaultVal, field.title, field.options);
+      }
+
+      switchTab('configurator');
+      showToast('Loaded fields into Configurator. Set your values and save!');
+    }
+
+    function renderFieldRow(key, val, label = '', options = []) {
+      const container = document.getElementById('cfg-fields-container');
+      const row = document.createElement('div');
+      row.className = 'p-4 rounded-xl border border-slate-200 bg-slate-50/50 space-y-2 field-row';
+
+      let optionsList = '';
+      if (options && options.length) {
+        optionsList = `<div class="text-xs text-slate-400">Available: ${options.map(o => `<span class="bg-white px-1.5 py-0.5 rounded border border-slate-200 mr-1 cursor-pointer hover:bg-slate-100" onclick="setRowValue(this, '${o.replace(/'/g, "\\'")}')">${o}</span>`).join('')}</div>`;
+      }
+
+      row.innerHTML = `
+        <div class="flex items-center justify-between text-xs">
+          <span class="font-bold text-slate-700">${label || 'Custom Field'}</span>
+          <button onclick="this.closest('.field-row').remove()" class="text-rose-500 hover:text-rose-700"><i class="fa-solid fa-trash"></i></button>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <input type="text" value="${key}" placeholder="entry.123456789" class="field-key font-mono text-xs px-3 py-2 rounded-lg border border-slate-300 bg-white">
+          <input type="text" value="${val}" placeholder="Value or {{TODAY}}" class="field-val sm:col-span-2 text-xs px-3 py-2 rounded-lg border border-slate-300 bg-white">
+        </div>
+        ${optionsList}
+      `;
+      container.appendChild(row);
+    }
+
+    function setRowValue(elem, val) {
+      const row = elem.closest('.field-row');
+      row.querySelector('.field-val').value = val;
+    }
+
+    function addFieldRow() {
+      renderFieldRow('', '', 'New Question Field');
+    }
+
+    // Save Config
+    async function saveConfiguration() {
+      const formUrl = document.getElementById('cfg-form-url').value.trim();
+      const email = document.getElementById('cfg-email').value.trim();
+      const mode = document.getElementById('cfg-mode').value;
+
+      const fieldRows = document.querySelectorAll('.field-row');
+      const fields = {};
+      fieldRows.forEach(row => {
+        const k = row.querySelector('.field-key').value.trim();
+        const v = row.querySelector('.field-val').value.trim();
+        if (k) fields[k] = v;
+      });
+
+      try {
+        const res = await fetch('/api/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            form_url: formUrl,
+            email: email,
+            mode: mode,
+            fields: fields
+          })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Failed to save config');
+        showToast('Configuration successfully saved to config/form_config.yaml!');
+      } catch (err) {
+        showToast(err.message, false);
+      }
+    }
+
+    // Recalculate Cron Preview
+    function recalculateCronPreview() {
+      const tz = document.getElementById('sched-tz').value;
+      const timeStr = document.getElementById('sched-time').value || '09:30';
+      const days = Array.from(document.querySelectorAll('input[name="sched-day"]:checked')).map(cb => cb.value);
+
+      if (!days.length) {
+        document.getElementById('cron-summary').innerText = 'Select at least one day.';
+        return;
+      }
+
+      // Simple client-side visual calculation
+      const [h, m] = timeStr.split(':').map(Number);
+      let offsetMins = 0;
+      if (tz === 'Asia/Kolkata') offsetMins = 330; // +5:30
+      else if (tz === 'America/New_York') offsetMins = -300; // -5:00
+      else if (tz === 'America/Los_Angeles') offsetMins = -480; // -8:00
+      else if (tz === 'Asia/Singapore') offsetMins = 480; // +8:00
+
+      let totalMins = (h * 60 + m) - offsetMins;
+      let utcH = Math.floor((totalMins % 1440 + 1440) % 1440 / 60);
+      let utcM = (totalMins % 1440 + 1440) % 60;
+
+      const utcTimeStr = `${String(utcH).padStart(2, '0')}:${String(utcM).padStart(2, '0')} UTC`;
+      document.getElementById('cron-utc-time').innerText = utcTimeStr;
+      document.getElementById('cron-summary').innerText = `Runs at ${timeStr} in ${tz} on ${days.join(', ')}`;
+    }
+
+    // Save Schedule to GitHub Workflow
+    async function saveSchedule() {
+      const tz = document.getElementById('sched-tz').value;
+      const timeStr = document.getElementById('sched-time').value;
+      const days = Array.from(document.querySelectorAll('input[name="sched-day"]:checked')).map(cb => cb.value);
+
+      if (!days.length) {
+        showToast('Please select at least one day of the week.', false);
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/schedule', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ days, time: timeStr, timezone: tz })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Failed to update schedule');
+
+        document.getElementById('cron-expr-display').innerText = data.cron;
+        showToast(data.message);
+      } catch (err) {
+        showToast(err.message, false);
+      }
+    }
+
+    // Run Submission (Dry Run or Live)
+    async function runSubmission(isDryRun) {
+      const consoleBox = document.getElementById('console-output');
+      const actionName = isDryRun ? 'Simulating Dry-Run' : 'Executing Live Submission';
+      consoleBox.innerText = `[${new Date().toLocaleTimeString()}] ${actionName}... Please wait...\n`;
+
+      try {
+        const res = await fetch('/api/test-submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ dry_run: isDryRun })
+        });
+        const data = await res.json();
+        
+        let output = `[${new Date().toLocaleTimeString()}] Result:\n`;
+        output += `Success: ${data.success ? '✅ YES' : '❌ NO'}\n`;
+        output += `Status Code: ${data.status_code || 'N/A'}\n`;
+        output += `Message: ${data.message}\n\n`;
+        output += `Submitted Payload:\n${JSON.stringify(data.submitted_payload, null, 2)}\n`;
+
+        if (data.error) {
+          output += `\nError Details:\n${data.error}\n`;
+        }
+
+        consoleBox.innerText = output;
+        showToast(data.message, data.success);
+      } catch (err) {
+        consoleBox.innerText += `\n[ERROR]: ${err.message}\n`;
+        showToast(err.message, false);
+      }
+    }
+
+    // Send Test Email
+    async function sendTestEmail() {
+      const btn = document.getElementById('btn-test-email');
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i> Sending...';
+      btn.disabled = true;
+
+      try {
+        const res = await fetch('/api/test-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            smtp_host: document.getElementById('smtp-host').value,
+            smtp_port: parseInt(document.getElementById('smtp-port').value),
+            smtp_user: document.getElementById('smtp-user').value,
+            smtp_password: document.getElementById('smtp-pass').value,
+            recipient_email: document.getElementById('smtp-recipient').value
+          })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Failed to send test email');
+        showToast(data.message);
+      } catch (err) {
+        showToast(err.message, false);
+      } finally {
+        btn.innerHTML = '<i class="fa-solid fa-paper-plane mr-1.5"></i> <span>Send Test Email</span>';
+        btn.disabled = false;
+      }
+    }
+
+    // Load initial config
+    async function loadInitialConfig() {
+      try {
+        const res = await fetch('/api/config');
+        if (!res.ok) return;
+        const cfg = await res.json();
+        currentConfig = cfg;
+        
+        if (cfg.form_url) {
+          document.getElementById('cfg-form-url').value = cfg.form_url;
+          document.getElementById('inspect-url-input').value = cfg.form_url;
+        }
+        if (cfg.email) document.getElementById('cfg-email').value = cfg.email;
+        if (cfg.mode) document.getElementById('cfg-mode').value = cfg.mode;
+
+        const container = document.getElementById('cfg-fields-container');
+        container.innerHTML = '';
+        if (cfg.fields && Object.keys(cfg.fields).length) {
+          for (const [k, v] of Object.entries(cfg.fields)) {
+            renderFieldRow(k, v, `Field (${k})`);
+          }
+        }
+      } catch (e) {
+        console.error("Could not load config", e);
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      loadInitialConfig();
+      recalculateCronPreview();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,2 @@
+# Optional Browser Engine for forms requiring Google Account authentication
+playwright>=1.42.0

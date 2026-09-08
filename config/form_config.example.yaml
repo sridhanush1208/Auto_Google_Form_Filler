@@ -1,0 +1,30 @@
+# Google Form Automation Configuration Template
+# You can generate this automatically using the Web Dashboard or Form Inspector CLI!
+
+form_url: "https://docs.google.com/forms/d/e/1FAIpQLSe_YOUR_FORM_ID_HERE/viewform"
+
+# Submission mode: "http" (default, fast direct POST for public forms) or "browser" (Playwright headless)
+mode: "http"
+
+# The email address with which you submit the form
+email: "your_email@example.com"
+
+# Field Mappings:
+# Key: The entry.<ID> parameter for the form question.
+# Value: The value to submit. Can be a static string, a list of strings (for checkboxes),
+#        or dynamic date templates like {{TODAY}}, {{NOW}}, {{TODAY_FORMAT:%d/%m/%Y}}.
+fields:
+  entry.123456789: "John Doe"
+  entry.987654321: "{{TODAY}}"
+  entry.554433221: "{{TODAY_FORMAT:%d/%m/%Y}}"
+  entry.112233445: "Option 1"
+  # Checkbox (multi-select) example:
+  # entry.998877665:
+  #   - "Choice A"
+  #   - "Choice B"
+
+# Email alert notification settings
+notifications:
+  enabled: true
+  on_success: true
+  on_failure: true
