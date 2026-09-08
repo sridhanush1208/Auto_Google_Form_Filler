@@ -130,4 +130,30 @@ def test_admin_smtp_endpoints():
     assert "smtp_password" not in data
 
 
+def test_api_image_proxy():
+    # 1. Reject missing or empty url
+    res = client.get("/api/image-proxy?url=")
+    assert res.status_code == 400
+
+    # 2. Reject disallowed domain
+    res = client.get("/api/image-proxy?url=https://evil-site.com/test.jpg")
+    assert res.status_code == 403
+
+    # 3. Allow valid domain request
+    from unittest.mock import patch, MagicMock
+    with patch("src.web.app.requests.get") as mock_get:
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.content = b"fake-jpeg-bytes"
+        mock_resp.headers = {"Content-Type": "image/jpeg"}
+        mock_get.return_value = mock_resp
+
+        res = client.get("/api/image-proxy?url=https://docs.google.com/forms-images-rt/test.jpg")
+        assert res.status_code == 200
+        assert res.content == b"fake-jpeg-bytes"
+        assert res.headers["content-type"] == "image/jpeg"
+        assert res.headers["cache-control"] == "public, max-age=86400"
+
+
+
 

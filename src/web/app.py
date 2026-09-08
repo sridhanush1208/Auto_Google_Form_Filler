@@ -4,9 +4,11 @@ import re
 from typing import Dict, Any, List, Optional
 from pathlib import Path
 from contextlib import asynccontextmanager
+from urllib.parse import urlparse
+import requests
 import yaml
 from fastapi import FastAPI, Request, HTTPException
-from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse
+from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
@@ -124,6 +126,50 @@ async def api_inspect(req: InspectRequest):
     if not result.get("success"):
         raise HTTPException(status_code=400, detail=result.get("error", "Failed to inspect form."))
     return result
+
+
+@app.get("/api/image-proxy")
+async def api_image_proxy(url: str):
+    """Proxy external images (like Google Forms images) to bypass browser Cross-Origin Resource Policy (CORP)."""
+    if not url or not url.strip():
+        raise HTTPException(status_code=400, detail="URL is required.")
+    
+    parsed = urlparse(url.strip())
+    if parsed.scheme not in ("http", "https"):
+        raise HTTPException(status_code=400, detail="Invalid URL scheme.")
+    
+    allowed_domains = (
+        "docs.google.com",
+        "googleusercontent.com",
+        "drive.google.com",
+        "ggpht.com",
+        "gstatic.com",
+        "google.com"
+    )
+    domain = parsed.netloc.lower().split(":")[0]
+    if not any(domain == d or domain.endswith("." + d) for d in allowed_domains):
+        raise HTTPException(status_code=403, detail="Domain not permitted for proxying.")
+
+    try:
+        resp = requests.get(
+            url.strip(),
+            headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            },
+            timeout=12
+        )
+        resp.raise_for_status()
+        content_type = resp.headers.get("Content-Type", "image/jpeg")
+        return Response(
+            content=resp.content,
+            media_type=content_type,
+            headers={
+                "Cache-Control": "public, max-age=86400",
+                "Access-Control-Allow-Origin": "*"
+            }
+        )
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Failed to fetch image: {e}")
 
 
 @app.get("/api/config")

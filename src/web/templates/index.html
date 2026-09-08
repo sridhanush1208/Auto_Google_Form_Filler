@@ -442,6 +442,14 @@
     let selectedScheduleMode = 'recurring'; // 'recurring' or 'once'
     let isAdminAuthenticated = false;
 
+    function proxyImg(url) {
+      if (!url) return '';
+      if (url.startsWith('/api/image-proxy') || url.startsWith('data:') || url.startsWith('blob:')) {
+        return url;
+      }
+      return `/api/image-proxy?url=${encodeURIComponent(url)}`;
+    }
+
     function showToast(msg, isSuccess = true) {
       const toast = document.getElementById('toast');
       const toastMsg = document.getElementById('toast-msg');
@@ -530,7 +538,7 @@
       const bannerContainer = document.getElementById('step2-header-banner-container');
       const bannerImg = document.getElementById('step2-header-banner');
       if (data.header_image && bannerContainer && bannerImg) {
-        bannerImg.src = data.header_image;
+        bannerImg.src = proxyImg(data.header_image);
         bannerContainer.classList.remove('hidden');
       } else if (bannerContainer) {
         bannerContainer.classList.add('hidden');
@@ -555,7 +563,7 @@
 
         const questionImgHtml = field.image 
           ? `<div class="mt-2 mb-2 rounded-xl overflow-hidden border border-slate-200 bg-white max-w-md p-1">
-               <img src="${field.image}" alt="Question Image" class="w-full max-h-64 object-contain rounded-lg" loading="lazy">
+               <img src="${proxyImg(field.image)}" alt="Question Image" class="w-full max-h-64 object-contain rounded-lg" loading="lazy" onerror="this.parentElement.style.display='none'">
              </div>` 
           : '';
 
@@ -573,7 +581,7 @@
                     <label class="relative flex flex-col p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-indigo-400 hover:shadow-xs transition cursor-pointer group">
                       ${optImg ? `
                         <div class="w-full h-44 mb-2.5 bg-slate-50 rounded-lg overflow-hidden flex items-center justify-center border border-slate-100 p-1">
-                          <img src="${optImg}" alt="${opt.replace(/"/g, '&quot;')}" class="max-h-full max-w-full object-contain rounded group-hover:scale-105 transition duration-200" loading="lazy">
+                          <img src="${proxyImg(optImg)}" alt="${opt.replace(/"/g, '&quot;')}" class="max-h-full max-w-full object-contain rounded group-hover:scale-105 transition duration-200" loading="lazy" onerror="this.parentElement.style.display='none'">
                         </div>
                       ` : ''}
                       <div class="flex items-center space-x-2.5 mt-auto">
@@ -608,7 +616,7 @@
                     <label class="relative flex flex-col p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-indigo-400 hover:shadow-xs transition cursor-pointer group">
                       ${optImg ? `
                         <div class="w-full h-44 mb-2.5 bg-slate-50 rounded-lg overflow-hidden flex items-center justify-center border border-slate-100 p-1">
-                          <img src="${optImg}" alt="${opt.replace(/"/g, '&quot;')}" class="max-h-full max-w-full object-contain rounded group-hover:scale-105 transition duration-200" loading="lazy">
+                          <img src="${proxyImg(optImg)}" alt="${opt.replace(/"/g, '&quot;')}" class="max-h-full max-w-full object-contain rounded group-hover:scale-105 transition duration-200" loading="lazy" onerror="this.parentElement.style.display='none'">
                         </div>
                       ` : ''}
                       <div class="flex items-center space-x-2.5 mt-auto">
