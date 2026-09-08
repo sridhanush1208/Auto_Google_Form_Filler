@@ -290,7 +290,7 @@
       <div class="flex items-center justify-between border-b border-slate-200 pb-4">
         <div>
           <h2 class="text-xl font-bold text-slate-900">🔒 Admin Management Portal</h2>
-          <p class="text-xs text-slate-500">View and remove scheduled executions.</p>
+          <p class="text-xs text-slate-500">Manage, freeze, and review all form submissions.</p>
         </div>
         <div class="flex items-center space-x-2">
           <button onclick="loadAdminJobs()" class="px-3 py-1.5 rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold transition">
@@ -302,7 +302,31 @@
         </div>
       </div>
 
-      <!-- Scheduled Jobs Table/List -->
+      <!-- Admin 3 Category Tabs -->
+      <div class="flex items-center space-x-2 border-b border-slate-200">
+        <button id="admin-tab-btn-scheduled" onclick="switchAdminTab('scheduled')" class="py-2.5 px-4 text-xs font-bold border-b-2 border-indigo-600 text-indigo-600 flex items-center space-x-2 transition">
+          <i class="fa-solid fa-calendar-check"></i>
+          <span>Scheduled (Active)</span>
+          <span id="badge-count-scheduled" class="px-2 py-0.5 rounded-full text-[10px] bg-indigo-100 text-indigo-700 font-bold">0</span>
+        </button>
+        <button id="admin-tab-btn-paused" onclick="switchAdminTab('paused')" class="py-2.5 px-4 text-xs font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center space-x-2 transition">
+          <i class="fa-solid fa-snowflake"></i>
+          <span>Paused (Frozen)</span>
+          <span id="badge-count-paused" class="px-2 py-0.5 rounded-full text-[10px] bg-slate-100 text-slate-600 font-bold">0</span>
+        </button>
+        <button id="admin-tab-btn-completed" onclick="switchAdminTab('completed')" class="py-2.5 px-4 text-xs font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center space-x-2 transition">
+          <i class="fa-solid fa-circle-check"></i>
+          <span>Completed</span>
+          <span id="badge-count-completed" class="px-2 py-0.5 rounded-full text-[10px] bg-slate-100 text-slate-600 font-bold">0</span>
+        </button>
+      </div>
+
+      <!-- Tab Status Helper -->
+      <div class="text-xs text-slate-600 bg-slate-100/70 px-4 py-2.5 rounded-xl flex items-center justify-between border border-slate-200">
+        <span id="admin-tab-desc-text"><i class="fa-solid fa-info-circle mr-1.5 text-indigo-500"></i> Active recurring jobs and upcoming scheduled submissions.</span>
+      </div>
+
+      <!-- Jobs Container -->
       <div id="admin-jobs-container" class="space-y-4">
         <div class="text-center py-12 text-slate-400 text-sm">
           <i class="fa-solid fa-spinner fa-spin text-xl mb-2"></i>
@@ -656,69 +680,176 @@
       showToast('Logged out of Admin mode');
     }
 
+    let allAdminJobs = [];
+    let currentAdminTab = 'scheduled';
+
+    function switchAdminTab(tab) {
+      currentAdminTab = tab;
+      ['scheduled', 'paused', 'completed'].forEach(t => {
+        const btn = document.getElementById(`admin-tab-btn-${t}`);
+        if (t === tab) {
+          btn.className = 'py-2.5 px-4 text-xs font-bold border-b-2 border-indigo-600 text-indigo-600 flex items-center space-x-2 transition';
+        } else {
+          btn.className = 'py-2.5 px-4 text-xs font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center space-x-2 transition';
+        }
+      });
+
+      const desc = document.getElementById('admin-tab-desc-text');
+      if (tab === 'scheduled') {
+        desc.innerHTML = '<i class="fa-solid fa-info-circle mr-1.5 text-indigo-500"></i> Active recurring schedules and upcoming one-time submissions.';
+      } else if (tab === 'paused') {
+        desc.innerHTML = '<i class="fa-solid fa-snowflake mr-1.5 text-amber-500"></i> Frozen recurring forms. These will NOT trigger until you click "Make Active".';
+      } else {
+        desc.innerHTML = '<i class="fa-solid fa-circle-check mr-1.5 text-emerald-500"></i> Completed one-time submissions that have already executed on their scheduled date.';
+      }
+
+      renderAdminJobs();
+    }
+
     async function loadAdminJobs() {
       const container = document.getElementById('admin-jobs-container');
       container.innerHTML = '<div class="text-center py-8 text-slate-400 text-xs"><i class="fa-solid fa-spinner fa-spin mr-1"></i> Loading scheduled jobs...</div>';
 
       try {
         const res = await fetch('/api/jobs');
-        const jobs = await res.json();
-
-        if (!jobs.length) {
-          container.innerHTML = `
-            <div class="text-center py-12 bg-white rounded-2xl border border-dashed border-slate-200">
-              <i class="fa-solid fa-calendar-xmark text-3xl text-slate-300 mb-2"></i>
-              <p class="text-slate-600 font-semibold text-sm">No scheduled executions found.</p>
-              <p class="text-slate-400 text-xs mt-1">When users schedule forms, they will appear here for management.</p>
-            </div>
-          `;
-          return;
-        }
-
-        container.innerHTML = '';
-        jobs.forEach(job => {
-          const card = document.createElement('div');
-          card.className = 'p-5 rounded-2xl border border-slate-200 bg-white hover:border-slate-300 transition shadow-xs space-y-3';
-          
-          let typeLabel = '';
-          if (job.schedule_type === 'once') {
-            typeLabel = `<span class="bg-amber-100 text-amber-800 text-[11px] font-bold px-2.5 py-0.5 rounded-full">Specific Date: ${job.target_date || 'N/A'} at ${job.time}</span>`;
-          } else {
-            typeLabel = `<span class="bg-indigo-100 text-indigo-800 text-[11px] font-bold px-2.5 py-0.5 rounded-full">Recurring: ${job.days ? job.days.join(', ') : 'Days'} at ${job.time}</span>`;
-          }
-
-          let statusBadge = job.is_active 
-            ? '<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800">Active</span>'
-            : '<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-600">Completed / Paused</span>';
-
-          card.innerHTML = `
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
-              <div>
-                <div class="flex items-center space-x-2">
-                  <h3 class="font-bold text-sm text-slate-900">${job.name}</h3>
-                  ${statusBadge}
-                  ${typeLabel}
-                </div>
-                <p class="text-xs text-slate-500 mt-1 truncate max-w-lg">${job.form_url}</p>
-              </div>
-              <div class="flex items-center space-x-2 shrink-0">
-                <button onclick="adminDeleteJob('${job.id}')" class="px-3 py-1.5 rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-50 text-xs font-semibold transition flex items-center space-x-1">
-                  <i class="fa-solid fa-trash"></i> <span>Remove</span>
-                </button>
-              </div>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs text-slate-600">
-              <div><strong>Alert Recipient:</strong> ${job.alert_email || '<span class="text-slate-400">None</span>'}</div>
-              <div><strong>Timezone:</strong> ${job.timezone}</div>
-              <div><strong>Last Execution:</strong> ${job.last_run_at ? `${job.last_run_at} (${job.last_run_status})` : 'Pending'}</div>
-            </div>
-          `;
-          container.appendChild(card);
-        });
-
+        allAdminJobs = await res.json();
+        updateAdminCounters();
+        renderAdminJobs();
       } catch (err) {
         container.innerHTML = `<p class="text-rose-500 text-xs">Failed to load: ${err.message}</p>`;
+      }
+    }
+
+    function updateAdminCounters() {
+      const scheduled = allAdminJobs.filter(j => j.is_active && j.last_run_status !== 'COMPLETED');
+      const paused = allAdminJobs.filter(j => !j.is_active && j.last_run_status !== 'COMPLETED');
+      const completed = allAdminJobs.filter(j => j.last_run_status === 'COMPLETED' || (j.schedule_type === 'once' && !j.is_active && j.last_run_at));
+
+      document.getElementById('badge-count-scheduled').innerText = scheduled.length;
+      document.getElementById('badge-count-paused').innerText = paused.length;
+      document.getElementById('badge-count-completed').innerText = completed.length;
+    }
+
+    function renderAdminJobs() {
+      const container = document.getElementById('admin-jobs-container');
+      updateAdminCounters();
+
+      let filtered = [];
+      if (currentAdminTab === 'scheduled') {
+        filtered = allAdminJobs.filter(j => j.is_active && j.last_run_status !== 'COMPLETED');
+      } else if (currentAdminTab === 'paused') {
+        filtered = allAdminJobs.filter(j => !j.is_active && j.last_run_status !== 'COMPLETED');
+      } else if (currentAdminTab === 'completed') {
+        filtered = allAdminJobs.filter(j => j.last_run_status === 'COMPLETED' || (j.schedule_type === 'once' && !j.is_active && j.last_run_at));
+      }
+
+      if (!filtered.length) {
+        let emptyIcon = 'fa-calendar-check';
+        let emptyMsg = 'No scheduled forms found.';
+        let emptySub = 'When users schedule recurring or upcoming forms, they will appear here.';
+        if (currentAdminTab === 'paused') {
+          emptyIcon = 'fa-snowflake';
+          emptyMsg = 'No paused / frozen forms.';
+          emptySub = 'You can freeze recurring forms from the Scheduled tab to hold submissions without deleting them.';
+        } else if (currentAdminTab === 'completed') {
+          emptyIcon = 'fa-circle-check';
+          emptyMsg = 'No completed executions yet.';
+          emptySub = 'Forms scheduled for a particular date & time will automatically appear here once submitted.';
+        }
+        container.innerHTML = `
+          <div class="text-center py-12 bg-white rounded-2xl border border-dashed border-slate-200 space-y-2">
+            <i class="fa-solid ${emptyIcon} text-3xl text-slate-300"></i>
+            <p class="text-slate-600 font-semibold text-sm">${emptyMsg}</p>
+            <p class="text-slate-400 text-xs">${emptySub}</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = '';
+      filtered.forEach(job => {
+        const card = document.createElement('div');
+        card.className = 'p-5 rounded-2xl border border-slate-200 bg-white hover:border-slate-300 transition shadow-xs space-y-3';
+        
+        let typeLabel = '';
+        if (job.schedule_type === 'once') {
+          typeLabel = `<span class="bg-amber-100 text-amber-800 text-[11px] font-bold px-2.5 py-0.5 rounded-full">Specific Date: ${job.target_date || 'N/A'} at ${job.time}</span>`;
+        } else {
+          typeLabel = `<span class="bg-indigo-100 text-indigo-800 text-[11px] font-bold px-2.5 py-0.5 rounded-full">Recurring: ${job.days ? job.days.join(', ') : 'Days'} at ${job.time}</span>`;
+        }
+
+        let statusBadge = '';
+        let actionButtons = '';
+
+        if (currentAdminTab === 'scheduled') {
+          statusBadge = '<span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800">Active</span>';
+          actionButtons = `
+            <button onclick="adminToggleJob('${job.id}', false)" class="px-3 py-1.5 rounded-xl border border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 text-xs font-semibold transition flex items-center space-x-1.5" title="Freeze this recurring schedule">
+              <i class="fa-solid fa-snowflake"></i> <span>Freeze</span>
+            </button>
+            <button onclick="adminDeleteJob('${job.id}')" class="px-3 py-1.5 rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-50 text-xs font-semibold transition flex items-center space-x-1">
+              <i class="fa-solid fa-trash"></i> <span>Remove</span>
+            </button>
+          `;
+        } else if (currentAdminTab === 'paused') {
+          statusBadge = '<span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800">Frozen</span>';
+          actionButtons = `
+            <button onclick="adminToggleJob('${job.id}', true)" class="px-3 py-1.5 rounded-xl border border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 text-xs font-semibold transition flex items-center space-x-1.5" title="Unfreeze and make this schedule active">
+              <i class="fa-solid fa-play"></i> <span>Make Active</span>
+            </button>
+            <button onclick="adminDeleteJob('${job.id}')" class="px-3 py-1.5 rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-50 text-xs font-semibold transition flex items-center space-x-1">
+              <i class="fa-solid fa-trash"></i> <span>Remove</span>
+            </button>
+          `;
+        } else { // completed
+          const isSuccess = job.last_run_status === 'COMPLETED' || job.last_run_status === 'SUCCESS';
+          statusBadge = isSuccess
+            ? '<span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-800">Completed</span>'
+            : '<span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-100 text-rose-800">Failed</span>';
+          actionButtons = `
+            <button onclick="adminDeleteJob('${job.id}')" class="px-3 py-1.5 rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-50 text-xs font-semibold transition flex items-center space-x-1">
+              <i class="fa-solid fa-trash"></i> <span>Remove</span>
+            </button>
+          `;
+        }
+
+        card.innerHTML = `
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+            <div>
+              <div class="flex items-center space-x-2">
+                <h3 class="font-bold text-sm text-slate-900">${job.name}</h3>
+                ${statusBadge}
+                ${typeLabel}
+              </div>
+              <p class="text-xs text-slate-500 mt-1 truncate max-w-lg">${job.form_url}</p>
+            </div>
+            <div class="flex items-center space-x-2 shrink-0">
+              ${actionButtons}
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs text-slate-600">
+            <div><strong>Alert Recipient:</strong> ${job.alert_email || '<span class="text-slate-400">None</span>'}</div>
+            <div><strong>Timezone:</strong> ${job.timezone}</div>
+            <div><strong>Last Execution:</strong> ${job.last_run_at ? `${job.last_run_at} (${job.last_run_status})` : '<span class="text-slate-400">Pending Run</span>'}</div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    async function adminToggleJob(jobId, makeActive) {
+      try {
+        const res = await fetch(`/api/jobs/${jobId}/toggle`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ is_active: makeActive })
+        });
+        const data = await res.json();
+        showToast(data.message);
+        loadAdminJobs();
+      } catch (err) {
+        showToast(err.message, false);
       }
     }
 

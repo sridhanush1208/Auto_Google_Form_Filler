@@ -61,8 +61,9 @@ def run_scheduled_job(job_id: str):
 
     status_str = "SUCCESS" if result.success else "FAILED"
     is_one_time = (job.get("schedule_type") == "once")
-    if is_one_time and result.success:
-        update_job_last_run(job_id, "COMPLETED")
+    if is_one_time:
+        comp_status = "COMPLETED" if result.success else "FAILED"
+        update_job_last_run(job_id, comp_status)
         toggle_job(job_id, False)
         unschedule_job_in_memory(job_id)
     else:
