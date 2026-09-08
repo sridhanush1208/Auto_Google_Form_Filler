@@ -5,7 +5,7 @@ from typing import Dict, Any, List, Optional
 from pathlib import Path
 import yaml
 from fastapi import FastAPI, Request, HTTPException
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
@@ -105,6 +105,31 @@ async def api_save_config(req: SaveConfigRequest):
     with open(CONFIG_PATH, "w", encoding="utf-8") as f:
         yaml.dump(payload, f, default_flow_style=False, sort_keys=False, allow_unicode=True)
     return {"success": True, "message": "Configuration saved successfully to config/form_config.yaml"}
+
+
+@app.get("/api/config/download")
+async def api_download_config():
+    target = CONFIG_PATH if CONFIG_PATH.exists() else EXAMPLE_CONFIG_PATH
+    if not target.exists():
+        raise HTTPException(status_code=404, detail="No configuration found to download.")
+    content = target.read_text(encoding="utf-8")
+    return PlainTextResponse(
+        content=content,
+        media_type="text/yaml",
+        headers={"Content-Disposition": "attachment; filename=form_config.yaml"}
+    )
+
+
+@app.get("/api/workflow/download")
+async def api_download_workflow():
+    if not WORKFLOW_PATH.exists():
+        raise HTTPException(status_code=404, detail="Workflow file does not exist.")
+    content = WORKFLOW_PATH.read_text(encoding="utf-8")
+    return PlainTextResponse(
+        content=content,
+        media_type="text/yaml",
+        headers={"Content-Disposition": "attachment; filename=scheduled_submission.yml"}
+    )
 
 
 @app.get("/api/schedule")

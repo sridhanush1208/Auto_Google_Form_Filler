@@ -132,10 +132,16 @@
               <h2 class="text-lg font-bold text-slate-900">📝 Field Values & Submission Settings</h2>
               <p class="text-sm text-slate-500">Specify what values to submit. Use dynamic date helpers to automatically insert today's date.</p>
             </div>
-            <button onclick="saveConfiguration()" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold shadow-sm transition flex items-center space-x-1.5">
-              <i class="fa-solid fa-floppy-disk"></i>
-              <span>Save Configuration</span>
-            </button>
+            <div class="flex items-center space-x-2">
+              <a href="/api/config/download" class="px-3.5 py-2 rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-xs transition flex items-center space-x-1">
+                <i class="fa-solid fa-download"></i>
+                <span>Download YAML</span>
+              </a>
+              <button onclick="saveConfiguration()" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold shadow-sm transition flex items-center space-x-1.5">
+                <i class="fa-solid fa-floppy-disk"></i>
+                <span>Save Configuration</span>
+              </button>
+            </div>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -203,10 +209,16 @@
               <h2 class="text-lg font-bold text-slate-900">⏰ Autonomous Schedule & Timezone Planner</h2>
               <p class="text-sm text-slate-500">Pick days and local time. We convert it to UTC and update your GitHub Actions autonomous runner.</p>
             </div>
-            <button onclick="saveSchedule()" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold shadow-sm transition flex items-center space-x-1.5">
-              <i class="fa-solid fa-cloud-arrow-up"></i>
-              <span>Save & Sync Schedule</span>
-            </button>
+            <div class="flex items-center space-x-2">
+              <a href="/api/workflow/download" class="px-3.5 py-2 rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-xs transition flex items-center space-x-1">
+                <i class="fa-solid fa-download"></i>
+                <span>Download Workflow</span>
+              </a>
+              <button onclick="saveSchedule()" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold shadow-sm transition flex items-center space-x-1.5">
+                <i class="fa-solid fa-cloud-arrow-up"></i>
+                <span>Save & Sync Schedule</span>
+              </button>
+            </div>
           </div>
 
           <!-- Timezone & Time Picker -->

@@ -43,3 +43,14 @@ def test_api_test_submit_dry_run():
     assert data["submitted_payload"]["emailAddress"] == "test@example.com"
     assert data["submitted_payload"]["entry.123"] == "Sample"
     assert "{{" not in data["submitted_payload"]["entry.456"]
+
+
+def test_api_download_endpoints():
+    res_cfg = client.get("/api/config/download")
+    assert res_cfg.status_code == 200
+    assert "form_url" in res_cfg.text
+
+    res_wf = client.get("/api/workflow/download")
+    assert res_wf.status_code == 200
+    assert "Autonomous Google Form Submission" in res_wf.text
+

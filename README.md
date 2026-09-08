@@ -2,30 +2,33 @@
 
 An autonomous, scheduled, dual-engine Google Form automation system with an interactive Web Dashboard and cloud-native execution. Submits your Google Form on specific days and times with your email and custom/dynamic field values—**completely autonomously, even when your computer is shut down or closed**.
 
-[![Tests](https://img.shields.io/badge/tests-14%20passed-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/tests-15%20passed-brightgreen.svg)]()
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)]()
+[![Render](https://img.shields.io/badge/deploy-Render%20Free-46E3B7.svg)]()
 [![GitHub Actions](https://img.shields.io/badge/runner-GitHub%20Actions-2088FF.svg)]()
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)]()
 
 ---
 
-## ✨ Features
+## 🌐 Deploy to Render (Free Cloud Web App for Mobile & Friends)
 
-- **Autonomous Cloud Execution**: Powered by GitHub Actions cron runner. Runs 24/7 on GitHub servers for **zero cost** without keeping your laptop on.
-- **Clean, Modern Web Dashboard**: Beautiful local UI (`python run_ui.py`) with Tailwind CSS:
-  - 🔍 **Form Inspector**: Paste any Google Form URL or Pre-filled Link to automatically extract question titles, field types, options, and entry IDs.
-  - 📝 **Field Configurator**: Visually set values with click-to-copy chips for dynamic date/time variables (`{{TODAY}}`, `{{NOW}}`, `{{TODAY_FORMAT:%d/%m/%Y}}`).
-  - ⏰ **Visual Schedule & Timezone Planner**: Select days (Mon-Sun) and your local time (e.g. IST); it automatically converts to UTC and updates the GitHub Actions workflow.
-  - 🧪 **Submission Console**: One-click simulated **Dry-Run** and **Live Submit** with full JSON payload and real-time response logs.
-  - 📧 **Email Notification Settings**: Dispatches instant alert emails on success or failure via SMTP.
-- **Dual-Engine Architecture**:
-  - **HTTP POST Engine**: Submits public forms directly in `<500ms` with zero browser overhead and automatic retries.
-  - **Browser Fallback Engine**: Playwright headless Chromium for forms requiring Google Account authentication or client-side JavaScript.
-- **Full Test Suite**: 14 automated unit and integration tests verifying all engines, parsers, and endpoints.
+You can host this entire web app online for **100% free** on **Render.com** so you and your friends can open it directly from mobile browsers:
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/sridhanush1208/Auto_Google_Form_Filler)
+
+### 30-Second Setup on Render:
+1. Log in to [render.com](https://render.com) using your GitHub account.
+2. Click **New +** → **Web Service**.
+3. Connect your repository: `sridhanush1208/Auto_Google_Form_Filler`.
+4. Render will automatically read `render.yaml` and configure everything!
+   - Build Command: `pip install -r requirements.txt`
+   - Start Command: `uvicorn src.web.app:app --host 0.0.0.0 --port $PORT`
+5. Click **Create Web Service**. 
+6. Render gives you a public link (e.g. `https://auto-google-form-filler.onrender.com`) that you and your friends can open on any phone!
 
 ---
 
-## 🚀 Quick Start (Web Dashboard)
+## 🚀 Local Quick Start (Web Dashboard)
 
 ### 1. Clone & Set Up Virtual Environment
 ```bash
