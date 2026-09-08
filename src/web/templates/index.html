@@ -1000,11 +1000,13 @@
     let allAdminJobs = [];
     let currentAdminTab = 'scheduled';
 
-    function isJobExpired(job) {
+    function isJobExpiredWhileFrozen(job) {
       if (job.schedule_type !== 'once') return false;
       if (job.last_run_status === 'EXPIRED') return true;
       // If it already executed (COMPLETED, SUCCESS, or FAILED), it has run and is NOT expired!
       if (job.last_run_status) return false;
+      // An active job is NEVER expired while frozen! It must be explicitly frozen (!job.is_active)
+      if (job.is_active) return false;
       if (!job.target_date) return false;
       try {
         const timeStr = job.time || '09:30';
@@ -1056,9 +1058,9 @@
     }
 
     function updateAdminCounters() {
-      const scheduled = allAdminJobs.filter(j => j.is_active && (j.schedule_type === 'recurring' || (!j.last_run_status && !isJobExpired(j))));
-      const paused = allAdminJobs.filter(j => !j.is_active && (j.schedule_type === 'recurring' || (!j.last_run_status && !isJobExpired(j))));
-      const completed = allAdminJobs.filter(j => j.last_run_status === 'COMPLETED' || j.last_run_status === 'SUCCESS' || j.last_run_status === 'FAILED' || j.last_run_status === 'EXPIRED' || (j.schedule_type === 'once' && (j.last_run_at || isJobExpired(j))));
+      const scheduled = allAdminJobs.filter(j => j.is_active && (j.schedule_type === 'recurring' || !j.last_run_status));
+      const paused = allAdminJobs.filter(j => !j.is_active && (j.schedule_type === 'recurring' || (!j.last_run_status && !isJobExpiredWhileFrozen(j))));
+      const completed = allAdminJobs.filter(j => j.last_run_status === 'COMPLETED' || j.last_run_status === 'SUCCESS' || j.last_run_status === 'FAILED' || j.last_run_status === 'EXPIRED' || (j.schedule_type === 'once' && (j.last_run_at || isJobExpiredWhileFrozen(j))));
 
       document.getElementById('badge-count-scheduled').innerText = scheduled.length;
       document.getElementById('badge-count-paused').innerText = paused.length;
@@ -1071,11 +1073,11 @@
 
       let filtered = [];
       if (currentAdminTab === 'scheduled') {
-        filtered = allAdminJobs.filter(j => j.is_active && (j.schedule_type === 'recurring' || (!j.last_run_status && !isJobExpired(j))));
+        filtered = allAdminJobs.filter(j => j.is_active && (j.schedule_type === 'recurring' || !j.last_run_status));
       } else if (currentAdminTab === 'paused') {
-        filtered = allAdminJobs.filter(j => !j.is_active && (j.schedule_type === 'recurring' || (!j.last_run_status && !isJobExpired(j))));
+        filtered = allAdminJobs.filter(j => !j.is_active && (j.schedule_type === 'recurring' || (!j.last_run_status && !isJobExpiredWhileFrozen(j))));
       } else if (currentAdminTab === 'completed') {
-        filtered = allAdminJobs.filter(j => j.last_run_status === 'COMPLETED' || j.last_run_status === 'SUCCESS' || j.last_run_status === 'FAILED' || j.last_run_status === 'EXPIRED' || (j.schedule_type === 'once' && (j.last_run_at || isJobExpired(j))));
+        filtered = allAdminJobs.filter(j => j.last_run_status === 'COMPLETED' || j.last_run_status === 'SUCCESS' || j.last_run_status === 'FAILED' || j.last_run_status === 'EXPIRED' || (j.schedule_type === 'once' && (j.last_run_at || isJobExpiredWhileFrozen(j))));
       }
 
       if (!filtered.length) {
@@ -1157,10 +1159,10 @@
         } else if (job.last_run_status === 'FAILED') {
           const reason = job.last_run_message ? ` - ${job.last_run_message}` : '';
           execInfo = `<span class="text-rose-600 font-semibold">${job.last_run_at || ''} (Failed${reason})</span>`;
-        } else if (isJobExpired(job) || job.last_run_status === 'EXPIRED') {
+        } else if (job.last_run_status === 'EXPIRED' || isJobExpiredWhileFrozen(job)) {
           execInfo = '<span class="text-amber-700 font-semibold">Expired (Scheduled date passed while frozen)</span>';
         } else {
-          execInfo = '<span class="text-slate-400">Pending Run</span>';
+          execInfo = '<span class="text-indigo-600 font-semibold">Pending Run at Scheduled Time</span>';
         }
 
         card.innerHTML = `

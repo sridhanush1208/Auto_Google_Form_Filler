@@ -87,11 +87,11 @@ def test_log_execution_and_retrieval():
 
 
 def test_past_one_time_job_expires():
-    from src.db import check_and_expire_past_jobs
+    from src.db import check_and_expire_past_jobs, toggle_job
 
-    # Create a job with target_date in the past
-    past_job_id = create_job(
-        name="Expired Event Form",
+    # 1. Active one-time job with date in past should NOT be marked expired
+    active_past_id = create_job(
+        name="Active Past Form",
         form_url="https://docs.google.com/forms/d/e/1FAIpQLSeTESTPAST/viewform",
         fields={"entry.1": "Yes"},
         days=[],
@@ -99,16 +99,59 @@ def test_past_one_time_job_expires():
         timezone="Asia/Kolkata",
         schedule_type="once",
         target_date="2020-01-01",
-        form_title="Old Event Form"
+        form_title="Active Event Form"
     )
 
-    # Trigger expiration check
     check_and_expire_past_jobs()
-
-    job = get_job(past_job_id)
+    job = get_job(active_past_id)
     assert job is not None
-    assert job["last_run_status"] == "EXPIRED"
-    assert job["is_active"] is False
+    assert job["last_run_status"] is None
+    assert job["is_active"] is True
 
-    delete_job(past_job_id)
+    # 2. Frozen/paused one-time job with date in past SHOULD be marked expired
+    toggle_job(active_past_id, False)
+    check_and_expire_past_jobs()
+    frozen_job = get_job(active_past_id)
+    assert frozen_job is not None
+    assert frozen_job["last_run_status"] == "EXPIRED"
+    assert frozen_job["is_active"] is False
+
+    delete_job(active_past_id)
+
+
+def test_active_due_job_schedules_immediately():
+    from src.engine import schedule_job_in_memory, scheduler, unschedule_job_in_memory
+    from datetime import datetime, timedelta
+    import pytz
+
+    tz = pytz.timezone("Asia/Kolkata")
+    # Time 1 minute in the past
+    past_dt = datetime.now(tz) - timedelta(minutes=1)
+    past_date_str = past_dt.strftime("%Y-%m-%d")
+    past_time_str = past_dt.strftime("%H:%M")
+
+    due_job_id = create_job(
+        name="Due Job",
+        form_url="https://docs.google.com/forms/d/e/1FAIpQLSeTESTDUE/viewform",
+        fields={"entry.1": "Yes"},
+        days=[],
+        time=past_time_str,
+        timezone="Asia/Kolkata",
+        schedule_type="once",
+        target_date=past_date_str,
+        form_title="Due Job Form"
+    )
+
+    job = get_job(due_job_id)
+    schedule_job_in_memory(job)
+
+    # Verify that APScheduler registered the job for execution
+    aps_job = scheduler.get_job(due_job_id)
+    assert aps_job is not None
+    assert aps_job.misfire_grace_time is None
+
+    unschedule_job_in_memory(due_job_id)
+    delete_job(due_job_id)
+
+
 

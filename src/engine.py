@@ -137,6 +137,24 @@ def schedule_job_in_memory(job: Dict[str, Any]):
             dt_str = f"{target_date} {time_str}"
             naive_dt = datetime.strptime(dt_str, "%Y-%m-%d %H:%M")
             localized_dt = tz.localize(naive_dt)
+            now_dt = datetime.now(tz)
+
+            # If the scheduled time has arrived or passed and the job hasn't executed yet:
+            if localized_dt <= now_dt:
+                if not job.get("last_run_status"):
+                    logger.info(f"⚡ Scheduled time {localized_dt} reached for active job [{job_id}]. Triggering execution now!")
+                    scheduler.add_job(
+                        run_scheduled_job,
+                        trigger=DateTrigger(run_date=now_dt, timezone=tz),
+                        args=[job_id],
+                        id=job_id,
+                        name=job.get("name", job_id),
+                        replace_existing=True,
+                        misfire_grace_time=None
+                    )
+                return
+
+            # Future scheduled execution
             trigger = DateTrigger(run_date=localized_dt, timezone=tz)
             scheduler.add_job(
                 run_scheduled_job,
@@ -144,7 +162,8 @@ def schedule_job_in_memory(job: Dict[str, Any]):
                 args=[job_id],
                 id=job_id,
                 name=job.get("name", job_id),
-                replace_existing=True
+                replace_existing=True,
+                misfire_grace_time=None
             )
             logger.info(f"✅ Registered one-time job [{job_id}] for {localized_dt}")
         except Exception as e:
@@ -191,7 +210,8 @@ def schedule_job_in_memory(job: Dict[str, Any]):
         args=[job_id],
         id=job_id,
         name=job.get("name", job_id),
-        replace_existing=True
+        replace_existing=True,
+        misfire_grace_time=None
     )
     logger.info(f"✅ Successfully registered job [{job_id}] ('{job.get('name')}') for {days_str} at {hour:02d}:{minute:02d} {tz_name}")
 

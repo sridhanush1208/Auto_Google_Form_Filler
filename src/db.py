@@ -131,14 +131,14 @@ def create_job(
 
 
 def check_and_expire_past_jobs() -> None:
-    """Detect any one-time jobs whose scheduled date has passed without executing (e.g. paused/frozen or offline) and mark them EXPIRED."""
+    """Detect any one-time jobs that were frozen/paused (is_active = 0) whose scheduled date passed while in freeze mode, and mark them EXPIRED."""
     now_utc = datetime.now(pytz.UTC)
     with get_connection() as conn:
         cursor = conn.cursor()
         cursor.execute("""
             SELECT id, schedule_type, target_date, time, timezone, is_active, last_run_status
             FROM jobs
-            WHERE schedule_type = 'once' AND last_run_status IS NULL
+            WHERE schedule_type = 'once' AND is_active = 0 AND last_run_status IS NULL
         """)
         rows = cursor.fetchall()
         for r in rows:
@@ -153,7 +153,7 @@ def check_and_expire_past_jobs() -> None:
                     if scheduled_dt < now_utc:
                         cursor.execute("""
                             UPDATE jobs
-                            SET last_run_status = 'EXPIRED', is_active = 0, last_run_at = ?, last_run_message = 'Scheduled date passed while frozen or before execution'
+                            SET last_run_status = 'EXPIRED', last_run_at = ?, last_run_message = 'Expired (Scheduled date passed while frozen)'
                             WHERE id = ?
                         """, (now_utc.strftime("%Y-%m-%d %H:%M:%S UTC"), r["id"]))
                 except Exception:
