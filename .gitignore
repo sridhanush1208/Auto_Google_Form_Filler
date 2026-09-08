@@ -16,8 +16,10 @@ __pycache__/
 config/form_config.yaml
 !config/form_config.example.yaml
 
-# Logs & temp
+# Logs, databases & temp
 *.log
+data/*.db
+data/*.sqlite
 scratch/
 .system_generated/
 

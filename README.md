@@ -2,29 +2,29 @@
 
 An autonomous, scheduled, dual-engine Google Form automation system with an interactive Web Dashboard and cloud-native execution. Submits your Google Form on specific days and times with your email and custom/dynamic field values—**completely autonomously, even when your computer is shut down or closed**.
 
-[![Tests](https://img.shields.io/badge/tests-15%20passed-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/tests-20%20passed-brightgreen.svg)]()
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)]()
+[![Hugging Face](https://img.shields.io/badge/deploy-Hugging%20Face%20(24%2F7%20No%20Sleep)-FFD21E.svg)]()
 [![Render](https://img.shields.io/badge/deploy-Render%20Free-46E3B7.svg)]()
-[![GitHub Actions](https://img.shields.io/badge/runner-GitHub%20Actions-2088FF.svg)]()
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)]()
 
 ---
 
-## 🌐 Deploy to Render (Free Cloud Web App for Mobile & Friends)
+## 🌐 100% Free 24/7 Cloud Hosting for You & Your Friends
 
-You can host this entire web app online for **100% free** on **Render.com** so you and your friends can open it directly from mobile browsers:
+This app is **multi-user ready**: you and your friends can open the website on any phone, inspect your Google Forms, set custom schedules, and enter your **own alert emails**. The cloud engine runs **autonomously 24/7 in the background** and submits each form on time even when all phones and laptops are turned off!
 
+### Option A: Hugging Face Spaces (Recommended — Never Sleeps, 16GB RAM)
+1. Go to [huggingface.co/new-space](https://huggingface.co/new-space) and create a free Space.
+2. Select **Docker** (Blank).
+3. Connect your GitHub repository: `sridhanush1208/Auto_Google_Form_Filler`.
+4. Hugging Face builds your Space automatically and gives you an instant mobile URL (e.g. `https://yourname-auto-form-filler.hf.space`) that **runs 24/7 without sleeping**!
+
+### Option B: Render.com (Easiest 1-Click Setup)
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/sridhanush1208/Auto_Google_Form_Filler)
-
-### 30-Second Setup on Render:
 1. Log in to [render.com](https://render.com) using your GitHub account.
-2. Click **New +** → **Web Service**.
-3. Connect your repository: `sridhanush1208/Auto_Google_Form_Filler`.
-4. Render will automatically read `render.yaml` and configure everything!
-   - Build Command: `pip install -r requirements.txt`
-   - Start Command: `uvicorn src.web.app:app --host 0.0.0.0 --port $PORT`
-5. Click **Create Web Service**. 
-6. Render gives you a public link (e.g. `https://auto-google-form-filler.onrender.com`) that you and your friends can open on any phone!
+2. Click **New +** → **Web Service** → Connect `sridhanush1208/Auto_Google_Form_Filler`.
+3. Render automatically uses `render.yaml` and deploys your website on a free URL (e.g. `https://auto-google-form-filler.onrender.com`).
 
 ---
 

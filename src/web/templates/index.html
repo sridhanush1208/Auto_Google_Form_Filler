@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Auto Google Form Filler Dashboard</title>
+  <title>Auto Google Form Filler - Cloud & Autonomous Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script>
@@ -29,15 +29,15 @@
         </div>
         <div>
           <h1 class="text-lg font-bold text-slate-900 leading-tight">Auto Google Form Filler</h1>
-          <p class="text-xs text-slate-500">Autonomous Cloud & Scheduled Submissions</p>
+          <p class="text-xs text-slate-500">Autonomous 24/7 Cloud Engine • Multi-User Ready</p>
         </div>
       </div>
       <div class="flex items-center space-x-3">
         <a href="https://github.com/sridhanush1208/Auto_Google_Form_Filler" target="_blank" class="inline-flex items-center px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-medium text-slate-700 hover:bg-slate-50 transition">
-          <i class="fa-brands fa-github mr-2"></i> GitHub Repository
+          <i class="fa-brands fa-github mr-2"></i> GitHub
         </a>
         <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
-          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span> Ready
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span> 24/7 Engine Active
         </span>
       </div>
     </div>
@@ -47,7 +47,7 @@
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full flex flex-col md:flex-row gap-8">
     
     <!-- Sidebar Navigation -->
-    <aside class="w-full md:w-64 shrink-0 space-y-2">
+    <aside class="w-full md:w-64 shrink-0 space-y-3">
       <nav class="space-y-1 bg-white p-3 rounded-2xl border border-slate-200 shadow-sm">
         <button onclick="switchTab('inspector')" id="tab-btn-inspector" class="w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition text-indigo-700 bg-indigo-50">
           <i class="fa-solid fa-magnifying-glass w-6 text-indigo-600"></i> Form Inspector
@@ -55,14 +55,18 @@
         <button onclick="switchTab('configurator')" id="tab-btn-configurator" class="w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition text-slate-600 hover:bg-slate-50">
           <i class="fa-solid fa-sliders w-6 text-slate-400"></i> Field Configurator
         </button>
-        <button onclick="switchTab('scheduler')" id="tab-btn-scheduler" class="w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition text-slate-600 hover:bg-slate-50">
-          <i class="fa-solid fa-clock w-6 text-slate-400"></i> Schedule & Timezone
+        <button onclick="switchTab('jobs')" id="tab-btn-jobs" class="w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition text-slate-600 hover:bg-slate-50">
+          <i class="fa-solid fa-calendar-check w-6 text-slate-400"></i> Scheduled Jobs
+          <span id="jobs-badge-count" class="ml-auto bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-0.5 rounded-full">0</span>
         </button>
         <button onclick="switchTab('console')" id="tab-btn-console" class="w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition text-slate-600 hover:bg-slate-50">
-          <i class="fa-solid fa-terminal w-6 text-slate-400"></i> Test & Submit
+          <i class="fa-solid fa-terminal w-6 text-slate-400"></i> Live Submit & Test
+        </button>
+        <button onclick="switchTab('logs')" id="tab-btn-logs" class="w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition text-slate-600 hover:bg-slate-50">
+          <i class="fa-solid fa-clock-rotate-left w-6 text-slate-400"></i> Execution History
         </button>
         <button onclick="switchTab('notifications')" id="tab-btn-notifications" class="w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition text-slate-600 hover:bg-slate-50">
-          <i class="fa-solid fa-envelope w-6 text-slate-400"></i> Email Notifications
+          <i class="fa-solid fa-envelope w-6 text-slate-400"></i> Email System (SMTP)
         </button>
       </nav>
 
@@ -70,10 +74,10 @@
       <div class="bg-gradient-to-br from-indigo-900 to-slate-900 text-white p-4 rounded-2xl shadow-sm text-xs space-y-2">
         <div class="flex items-center space-x-2 text-indigo-300 font-semibold uppercase tracking-wider">
           <i class="fa-solid fa-cloud"></i>
-          <span>Autonomous Runner</span>
+          <span>Autonomous 24/7 Engine</span>
         </div>
         <p class="text-slate-300 leading-relaxed">
-          Runs on GitHub Actions 24/7. Your laptop can be closed or turned off; submissions continue autonomously.
+          Every friend can schedule their own form and input their own alert email. The server autonomously executes submissions and emails them directly!
         </p>
       </div>
     </aside>
@@ -92,7 +96,7 @@
         <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
           <div>
             <h2 class="text-lg font-bold text-slate-900">🔍 Google Form Inspector</h2>
-            <p class="text-sm text-slate-500">Paste your Google Form URL or "Pre-filled Link". We'll automatically extract all questions, field types, and entry IDs.</p>
+            <p class="text-sm text-slate-500">Paste your Google Form URL or "Pre-filled Link". We'll automatically extract questions, options, and entry IDs.</p>
           </div>
           
           <div class="flex gap-3">
@@ -124,44 +128,116 @@
         </div>
       </section>
 
-      <!-- TAB 2: FIELD CONFIGURATOR -->
+      <!-- TAB 2: FIELD CONFIGURATOR & SCHEDULE CREATOR -->
       <section id="tab-configurator" class="hidden space-y-6">
         <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
-          <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-4 gap-3">
             <div>
-              <h2 class="text-lg font-bold text-slate-900">📝 Field Values & Submission Settings</h2>
-              <p class="text-sm text-slate-500">Specify what values to submit. Use dynamic date helpers to automatically insert today's date.</p>
+              <h2 class="text-lg font-bold text-slate-900">📝 Configure & Schedule Form</h2>
+              <p class="text-sm text-slate-500">Set what to submit, who receives the confirmation email, and your schedule.</p>
             </div>
             <div class="flex items-center space-x-2">
               <a href="/api/config/download" class="px-3.5 py-2 rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-xs transition flex items-center space-x-1">
                 <i class="fa-solid fa-download"></i>
                 <span>Download YAML</span>
               </a>
-              <button onclick="saveConfiguration()" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold shadow-sm transition flex items-center space-x-1.5">
-                <i class="fa-solid fa-floppy-disk"></i>
-                <span>Save Configuration</span>
+              <button onclick="saveAndScheduleJob()" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold shadow-sm transition flex items-center space-x-1.5">
+                <i class="fa-solid fa-cloud-arrow-up"></i>
+                <span>Save & Activate Schedule</span>
               </button>
             </div>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Basic Info -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Schedule Name / Label</label>
+              <input type="text" id="cfg-job-name" value="Daily Form Submission" placeholder="e.g. Daily Attendance" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500">
+            </div>
             <div>
               <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Target Form URL</label>
               <input type="text" id="cfg-form-url" placeholder="https://docs.google.com/forms/d/e/.../viewform" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500">
             </div>
             <div>
-              <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Your Submission Email</label>
-              <input type="email" id="cfg-email" placeholder="your_email@example.com" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500">
+              <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Submission Mode</label>
+              <select id="cfg-mode" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500">
+                <option value="http">Direct HTTP POST (Fast, for public forms)</option>
+                <option value="browser">Headless Browser (Playwright, for login forms)</option>
+              </select>
             </div>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Emails (Form Field Email vs Alert Email) -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
             <div>
-              <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Submission Mode</label>
-              <select id="cfg-mode" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500">
-                <option value="http">Direct HTTP POST (Recommended, fast, for public forms)</option>
-                <option value="browser">Headless Browser (Playwright, for forms requiring sign-in)</option>
-              </select>
+              <label class="block text-xs font-bold text-slate-700 uppercase mb-1 flex items-center">
+                <i class="fa-solid fa-at text-slate-400 mr-1.5"></i> Form Email Field (To fill inside the form)
+              </label>
+              <input type="email" id="cfg-email" placeholder="your_email_in_form@example.com" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 bg-white focus:ring-2 focus:ring-indigo-500">
+              <p class="text-xs text-slate-400 mt-1">Filled into Google Form's emailAddress question.</p>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-indigo-900 uppercase mb-1 flex items-center">
+                <i class="fa-solid fa-bell text-indigo-600 mr-1.5"></i> Alert Recipient Email (Who gets notified)
+              </label>
+              <input type="email" id="cfg-alert-email" placeholder="where_to_send_alerts@example.com" class="w-full px-3 py-2 text-sm rounded-xl border border-indigo-300 bg-indigo-50/50 focus:ring-2 focus:ring-indigo-500 font-medium">
+              <p class="text-xs text-indigo-600 mt-1">Every user enters their own email here. Alerts are sent here upon submission!</p>
+            </div>
+          </div>
+
+          <!-- Schedule Options -->
+          <div class="p-4 rounded-xl border border-slate-200 space-y-4">
+            <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider">Autonomous Schedule Timing</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs text-slate-500 mb-1">Timezone</label>
+                <select id="cfg-timezone" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300">
+                  <option value="Asia/Kolkata" selected>Asia/Kolkata (IST, UTC +5:30)</option>
+                  <option value="UTC">UTC (Coordinated Universal Time)</option>
+                  <option value="America/New_York">America/New_York (EST/EDT)</option>
+                  <option value="America/Los_Angeles">America/Los_Angeles (PST/PDT)</option>
+                  <option value="Europe/London">Europe/London (GMT/BST)</option>
+                  <option value="Asia/Singapore">Asia/Singapore (SGT, UTC +8)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs text-slate-500 mb-1">Local Time</label>
+                <input type="time" id="cfg-time" value="09:30" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300">
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs text-slate-500 mb-2">Active Days</label>
+              <div class="grid grid-cols-2 sm:grid-cols-7 gap-2">
+                <label class="border border-slate-200 rounded-xl p-2.5 flex flex-col items-center justify-center hover:bg-slate-50 cursor-pointer">
+                  <input type="checkbox" name="cfg-day" value="Mon" checked class="rounded text-indigo-600 mb-1">
+                  <span class="text-xs font-bold text-slate-700">Mon</span>
+                </label>
+                <label class="border border-slate-200 rounded-xl p-2.5 flex flex-col items-center justify-center hover:bg-slate-50 cursor-pointer">
+                  <input type="checkbox" name="cfg-day" value="Tue" class="rounded text-indigo-600 mb-1">
+                  <span class="text-xs font-bold text-slate-700">Tue</span>
+                </label>
+                <label class="border border-slate-200 rounded-xl p-2.5 flex flex-col items-center justify-center hover:bg-slate-50 cursor-pointer">
+                  <input type="checkbox" name="cfg-day" value="Wed" checked class="rounded text-indigo-600 mb-1">
+                  <span class="text-xs font-bold text-slate-700">Wed</span>
+                </label>
+                <label class="border border-slate-200 rounded-xl p-2.5 flex flex-col items-center justify-center hover:bg-slate-50 cursor-pointer">
+                  <input type="checkbox" name="cfg-day" value="Thu" class="rounded text-indigo-600 mb-1">
+                  <span class="text-xs font-bold text-slate-700">Thu</span>
+                </label>
+                <label class="border border-slate-200 rounded-xl p-2.5 flex flex-col items-center justify-center hover:bg-slate-50 cursor-pointer">
+                  <input type="checkbox" name="cfg-day" value="Fri" checked class="rounded text-indigo-600 mb-1">
+                  <span class="text-xs font-bold text-slate-700">Fri</span>
+                </label>
+                <label class="border border-slate-200 rounded-xl p-2.5 flex flex-col items-center justify-center hover:bg-slate-50 cursor-pointer">
+                  <input type="checkbox" name="cfg-day" value="Sat" class="rounded text-indigo-600 mb-1">
+                  <span class="text-xs font-bold text-slate-700">Sat</span>
+                </label>
+                <label class="border border-slate-200 rounded-xl p-2.5 flex flex-col items-center justify-center hover:bg-slate-50 cursor-pointer">
+                  <input type="checkbox" name="cfg-day" value="Sun" class="rounded text-indigo-600 mb-1">
+                  <span class="text-xs font-bold text-slate-700">Sun</span>
+                </label>
+              </div>
             </div>
           </div>
 
@@ -191,7 +267,7 @@
           <!-- Fields Editor -->
           <div class="space-y-3">
             <div class="flex items-center justify-between">
-              <label class="text-sm font-bold text-slate-800">Form Field Values</label>
+              <label class="text-sm font-bold text-slate-800">Form Question Field Values</label>
               <button onclick="addFieldRow()" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium rounded-lg transition">
                 <i class="fa-solid fa-plus mr-1"></i> Add Custom Field
               </button>
@@ -201,94 +277,25 @@
         </div>
       </section>
 
-      <!-- TAB 3: SCHEDULE & TIMEZONE -->
-      <section id="tab-scheduler" class="hidden space-y-6">
+      <!-- TAB 3: SCHEDULED JOBS (MULTI-USER) -->
+      <section id="tab-jobs" class="hidden space-y-6">
         <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
           <div class="flex items-center justify-between border-b border-slate-100 pb-4">
             <div>
-              <h2 class="text-lg font-bold text-slate-900">⏰ Autonomous Schedule & Timezone Planner</h2>
-              <p class="text-sm text-slate-500">Pick days and local time. We convert it to UTC and update your GitHub Actions autonomous runner.</p>
+              <h2 class="text-lg font-bold text-slate-900">⏰ Active Cloud Scheduled Jobs</h2>
+              <p class="text-sm text-slate-500">Autonomous 24/7 background jobs running in the cloud for you and your friends.</p>
             </div>
-            <div class="flex items-center space-x-2">
-              <a href="/api/workflow/download" class="px-3.5 py-2 rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-xs transition flex items-center space-x-1">
-                <i class="fa-solid fa-download"></i>
-                <span>Download Workflow</span>
-              </a>
-              <button onclick="saveSchedule()" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold shadow-sm transition flex items-center space-x-1.5">
-                <i class="fa-solid fa-cloud-arrow-up"></i>
-                <span>Save & Sync Schedule</span>
-              </button>
-            </div>
+            <button onclick="switchTab('configurator')" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-sm transition flex items-center space-x-1.5">
+              <i class="fa-solid fa-plus"></i>
+              <span>Schedule New Form</span>
+            </button>
           </div>
 
-          <!-- Timezone & Time Picker -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Select Timezone</label>
-              <select id="sched-tz" onchange="recalculateCronPreview()" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500">
-                <option value="Asia/Kolkata" selected>Asia/Kolkata (IST, UTC +5:30)</option>
-                <option value="UTC">UTC (Coordinated Universal Time)</option>
-                <option value="America/New_York">America/New_York (EST/EDT)</option>
-                <option value="America/Los_Angeles">America/Los_Angeles (PST/PDT)</option>
-                <option value="Europe/London">Europe/London (GMT/BST)</option>
-                <option value="Asia/Singapore">Asia/Singapore (SGT, UTC +8)</option>
-              </select>
+          <div id="jobs-container" class="space-y-4">
+            <div class="text-center py-8 text-slate-400 text-sm">
+              <i class="fa-solid fa-spinner fa-spin text-xl mb-2"></i>
+              <p>Loading scheduled jobs...</p>
             </div>
-
-            <div>
-              <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Local Submission Time</label>
-              <input type="time" id="sched-time" value="09:30" onchange="recalculateCronPreview()" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500">
-            </div>
-          </div>
-
-          <!-- Days Selector Pills -->
-          <div>
-            <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Active Days of Week</label>
-            <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2">
-              <label class="cursor-pointer border border-slate-200 rounded-xl p-3 flex flex-col items-center justify-center hover:bg-slate-50 transition day-pill">
-                <input type="checkbox" name="sched-day" value="Mon" checked onchange="recalculateCronPreview()" class="rounded text-indigo-600 focus:ring-indigo-500 mb-1">
-                <span class="text-xs font-bold text-slate-700">Mon</span>
-              </label>
-              <label class="cursor-pointer border border-slate-200 rounded-xl p-3 flex flex-col items-center justify-center hover:bg-slate-50 transition day-pill">
-                <input type="checkbox" name="sched-day" value="Tue" onchange="recalculateCronPreview()" class="rounded text-indigo-600 focus:ring-indigo-500 mb-1">
-                <span class="text-xs font-bold text-slate-700">Tue</span>
-              </label>
-              <label class="cursor-pointer border border-slate-200 rounded-xl p-3 flex flex-col items-center justify-center hover:bg-slate-50 transition day-pill">
-                <input type="checkbox" name="sched-day" value="Wed" checked onchange="recalculateCronPreview()" class="rounded text-indigo-600 focus:ring-indigo-500 mb-1">
-                <span class="text-xs font-bold text-slate-700">Wed</span>
-              </label>
-              <label class="cursor-pointer border border-slate-200 rounded-xl p-3 flex flex-col items-center justify-center hover:bg-slate-50 transition day-pill">
-                <input type="checkbox" name="sched-day" value="Thu" onchange="recalculateCronPreview()" class="rounded text-indigo-600 focus:ring-indigo-500 mb-1">
-                <span class="text-xs font-bold text-slate-700">Thu</span>
-              </label>
-              <label class="cursor-pointer border border-slate-200 rounded-xl p-3 flex flex-col items-center justify-center hover:bg-slate-50 transition day-pill">
-                <input type="checkbox" name="sched-day" value="Fri" checked onchange="recalculateCronPreview()" class="rounded text-indigo-600 focus:ring-indigo-500 mb-1">
-                <span class="text-xs font-bold text-slate-700">Fri</span>
-              </label>
-              <label class="cursor-pointer border border-slate-200 rounded-xl p-3 flex flex-col items-center justify-center hover:bg-slate-50 transition day-pill">
-                <input type="checkbox" name="sched-day" value="Sat" onchange="recalculateCronPreview()" class="rounded text-indigo-600 focus:ring-indigo-500 mb-1">
-                <span class="text-xs font-bold text-slate-700">Sat</span>
-              </label>
-              <label class="cursor-pointer border border-slate-200 rounded-xl p-3 flex flex-col items-center justify-center hover:bg-slate-50 transition day-pill">
-                <input type="checkbox" name="sched-day" value="Sun" onchange="recalculateCronPreview()" class="rounded text-indigo-600 focus:ring-indigo-500 mb-1">
-                <span class="text-xs font-bold text-slate-700">Sun</span>
-              </label>
-            </div>
-          </div>
-
-          <!-- Live Cron Schedule Preview Card -->
-          <div class="bg-slate-900 text-white p-5 rounded-2xl space-y-3 font-mono text-xs">
-            <div class="flex items-center justify-between text-slate-400 font-sans">
-              <span class="font-semibold uppercase tracking-wider text-xs">Generated GitHub Actions Cron</span>
-              <span id="cron-utc-time" class="text-indigo-400">04:00 UTC</span>
-            </div>
-            <div class="text-xl text-emerald-400 font-bold tracking-widest bg-slate-800/80 px-4 py-2.5 rounded-xl border border-slate-700 flex items-center justify-between">
-              <span id="cron-expr-display">0 4 * * 1,3,5</span>
-              <span class="text-xs font-normal text-slate-400 font-sans">POSIX Cron</span>
-            </div>
-            <p id="cron-summary" class="text-slate-300 font-sans text-xs">
-              Runs at 09:30 AM IST on Mon, Wed, Fri (even when laptop is closed)
-            </p>
           </div>
         </div>
       </section>
@@ -297,8 +304,8 @@
       <section id="tab-console" class="hidden space-y-6">
         <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
           <div>
-            <h2 class="text-lg font-bold text-slate-900">🧪 Submission Console & Live Verification</h2>
-            <p class="text-sm text-slate-500">Run a simulated Dry-Run to inspect the payload, or perform an instant live submission.</p>
+            <h2 class="text-lg font-bold text-slate-900">🧪 Live Submission & Instant Test</h2>
+            <p class="text-sm text-slate-500">Run a simulated Dry-Run to inspect the payload, or perform an instant live submission right now.</p>
           </div>
 
           <div class="flex flex-wrap gap-4">
@@ -322,13 +329,34 @@ Ready. Click "Simulate (Dry-Run)" or "Live Submit Now" to execute.
         </div>
       </section>
 
-      <!-- TAB 5: EMAIL NOTIFICATIONS -->
+      <!-- TAB 5: EXECUTION HISTORY LOGS -->
+      <section id="tab-logs" class="hidden space-y-6">
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+            <div>
+              <h2 class="text-lg font-bold text-slate-900">📜 Autonomous Execution Logs</h2>
+              <p class="text-sm text-slate-500">Track every autonomous cloud run, submission status, and who was emailed.</p>
+            </div>
+            <button onclick="loadLogs()" class="px-3.5 py-1.5 rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-medium transition">
+              <i class="fa-solid fa-rotate-right mr-1"></i> Refresh
+            </button>
+          </div>
+
+          <div id="logs-container" class="space-y-3">
+            <div class="text-center py-8 text-slate-400 text-sm">
+              <p>Loading execution history...</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 6: EMAIL SYSTEM (SMTP) -->
       <section id="tab-notifications" class="hidden space-y-6">
         <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
           <div class="flex items-center justify-between border-b border-slate-100 pb-4">
             <div>
-              <h2 class="text-lg font-bold text-slate-900">📧 Email Alert Settings</h2>
-              <p class="text-sm text-slate-500">Receive an email when the form is submitted or if any error occurs.</p>
+              <h2 class="text-lg font-bold text-slate-900">📧 System Email Dispatcher (SMTP)</h2>
+              <p class="text-sm text-slate-500">The central bot credentials used to dispatch confirmation emails to you and your friends.</p>
             </div>
             <button onclick="sendTestEmail()" id="btn-test-email" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-sm transition flex items-center space-x-1.5">
               <i class="fa-solid fa-paper-plane"></i>
@@ -346,22 +374,17 @@ Ready. Click "Simulate (Dry-Run)" or "Live Submit Now" to execute.
               <input type="number" id="smtp-port" placeholder="587" value="587" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300">
             </div>
             <div>
-              <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Sender Email / Username</label>
-              <input type="email" id="smtp-user" placeholder="your_email@gmail.com" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300">
+              <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Bot Sender Email (Gmail)</label>
+              <input type="email" id="smtp-user" placeholder="your_bot_email@gmail.com" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300">
             </div>
             <div>
               <label class="block text-xs font-bold text-slate-700 uppercase mb-1">App Password</label>
               <input type="password" id="smtp-pass" placeholder="16-character Google App Password" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300">
             </div>
             <div class="md:col-span-2">
-              <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Alert Recipient Email</label>
+              <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Test Recipient Email</label>
               <input type="email" id="smtp-recipient" placeholder="recipient@gmail.com" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300">
             </div>
-          </div>
-
-          <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs text-amber-800 space-y-1">
-            <p class="font-bold flex items-center"><i class="fa-solid fa-shield-halved mr-1.5"></i> Security Note for GitHub Actions:</p>
-            <p>For autonomous runs on GitHub, add these values to your GitHub repository under <strong>Settings &gt; Secrets and variables &gt; Actions</strong> as repository secrets (<code>SMTP_HOST</code>, <code>SMTP_PORT</code>, <code>SMTP_USER</code>, <code>SMTP_PASSWORD</code>, <code>ALERT_RECIPIENT_EMAIL</code>).</p>
           </div>
         </div>
       </section>
@@ -370,11 +393,10 @@ Ready. Click "Simulate (Dry-Run)" or "Live Submit Now" to execute.
   </div>
 
   <script>
-    let currentConfig = {};
     let inspectedData = null;
 
     function switchTab(tabId) {
-      const tabs = ['inspector', 'configurator', 'scheduler', 'console', 'notifications'];
+      const tabs = ['inspector', 'configurator', 'jobs', 'console', 'logs', 'notifications'];
       tabs.forEach(t => {
         document.getElementById(`tab-${t}`).classList.add('hidden');
         const btn = document.getElementById(`tab-btn-${t}`);
@@ -385,6 +407,9 @@ Ready. Click "Simulate (Dry-Run)" or "Live Submit Now" to execute.
       const activeBtn = document.getElementById(`tab-btn-${tabId}`);
       activeBtn.classList.add('bg-indigo-50', 'text-indigo-700');
       activeBtn.classList.remove('text-slate-600');
+
+      if (tabId === 'jobs') loadJobs();
+      if (tabId === 'logs') loadLogs();
     }
 
     function showToast(msg, isSuccess = true) {
@@ -473,6 +498,7 @@ Ready. Click "Simulate (Dry-Run)" or "Live Submit Now" to execute.
     function populateConfigFromInspection() {
       if (!inspectedData) return;
       document.getElementById('cfg-form-url').value = inspectedData.form_url || '';
+      document.getElementById('cfg-job-name').value = inspectedData.title || 'My Google Form';
       if (inspectedData.prefilled_email) {
         document.getElementById('cfg-email').value = inspectedData.prefilled_email;
       }
@@ -487,7 +513,7 @@ Ready. Click "Simulate (Dry-Run)" or "Live Submit Now" to execute.
       }
 
       switchTab('configurator');
-      showToast('Loaded fields into Configurator. Set your values and save!');
+      showToast('Loaded fields into Configurator. Set values and schedule!');
     }
 
     function renderFieldRow(key, val, label = '', options = []) {
@@ -523,10 +549,219 @@ Ready. Click "Simulate (Dry-Run)" or "Live Submit Now" to execute.
       renderFieldRow('', '', 'New Question Field');
     }
 
-    // Save Config
-    async function saveConfiguration() {
+    // Save and Schedule Job (Multi-User Cloud Engine)
+    async function saveAndScheduleJob() {
+      const name = document.getElementById('cfg-job-name').value.trim() || 'My Google Form';
       const formUrl = document.getElementById('cfg-form-url').value.trim();
-      const email = document.getElementById('cfg-email').value.trim();
+      const formEmail = document.getElementById('cfg-email').value.trim();
+      const alertEmail = document.getElementById('cfg-alert-email').value.trim();
+      const mode = document.getElementById('cfg-mode').value;
+      const timezone = document.getElementById('cfg-timezone').value;
+      const time = document.getElementById('cfg-time').value;
+      const days = Array.from(document.querySelectorAll('input[name="cfg-day"]:checked')).map(cb => cb.value);
+
+      if (!formUrl) {
+        showToast('Please enter a Form URL', false);
+        return;
+      }
+      if (!days.length) {
+        showToast('Please select at least one day of the week', false);
+        return;
+      }
+
+      const fieldRows = document.querySelectorAll('.field-row');
+      const fields = {};
+      fieldRows.forEach(row => {
+        const k = row.querySelector('.field-key').value.trim();
+        const v = row.querySelector('.field-val').value.trim();
+        if (k) fields[k] = v;
+      });
+
+      try {
+        const res = await fetch('/api/jobs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name,
+            form_url: formUrl,
+            form_email: formEmail,
+            alert_email: alertEmail,
+            mode,
+            timezone,
+            time,
+            days,
+            fields
+          })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Failed to schedule job');
+
+        showToast(`🎉 ${data.message}`);
+        switchTab('jobs');
+      } catch (err) {
+        showToast(err.message, false);
+      }
+    }
+
+    // Load Jobs
+    async function loadJobs() {
+      const container = document.getElementById('jobs-container');
+      try {
+        const res = await fetch('/api/jobs');
+        const jobs = await res.json();
+        document.getElementById('jobs-badge-count').innerText = jobs.length;
+
+        if (!jobs.length) {
+          container.innerHTML = `
+            <div class="text-center py-12 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+              <i class="fa-solid fa-calendar-xmark text-3xl text-slate-300 mb-2"></i>
+              <p class="text-slate-500 font-medium text-sm">No scheduled forms yet.</p>
+              <p class="text-slate-400 text-xs mt-1">Inspect a Google Form and click "Save & Activate Schedule" to start autonomous submissions!</p>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = '';
+        jobs.forEach(job => {
+          const card = document.createElement('div');
+          card.className = 'p-5 rounded-2xl border border-slate-200 bg-white hover:border-indigo-200 transition shadow-xs space-y-3';
+          
+          const statusBadge = job.is_active 
+            ? '<span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800"><i class="fa-solid fa-circle text-[8px] mr-1"></i> Active</span>'
+            : '<span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600"><i class="fa-solid fa-circle text-[8px] mr-1"></i> Paused</span>';
+
+          const lastRun = job.last_run_at 
+            ? `<span class="text-xs text-slate-500">Last run: ${job.last_run_at} (${job.last_run_status})</span>`
+            : '<span class="text-xs text-slate-400">Has not run yet</span>';
+
+          card.innerHTML = `
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+              <div>
+                <div class="flex items-center space-x-2">
+                  <h3 class="font-bold text-base text-slate-900">${job.name}</h3>
+                  ${statusBadge}
+                </div>
+                <p class="text-xs text-slate-500 mt-0.5 truncate max-w-md">${job.form_url}</p>
+              </div>
+              <div class="flex items-center space-x-2">
+                <button onclick="runJobNow('${job.id}')" title="Run submission immediately" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold transition flex items-center space-x-1">
+                  <i class="fa-solid fa-play"></i> <span>Run Now</span>
+                </button>
+                <button onclick="toggleJob('${job.id}', ${!job.is_active})" class="px-3 py-1.5 rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold transition">
+                  ${job.is_active ? '<i class="fa-solid fa-pause mr-1"></i> Pause' : '<i class="fa-solid fa-play mr-1"></i> Resume'}
+                </button>
+                <button onclick="deleteJob('${job.id}')" class="px-3 py-1.5 rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-50 text-xs font-semibold transition">
+                  <i class="fa-solid fa-trash"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs text-slate-600">
+              <div><strong>Schedule:</strong> ${job.days.join(', ')} at ${job.time} (${job.timezone})</div>
+              <div><strong>Alert Recipient:</strong> ${job.alert_email || '<span class="text-slate-400">None</span>'}</div>
+              <div><strong>Status:</strong> ${lastRun}</div>
+            </div>
+          `;
+          container.appendChild(card);
+        });
+
+      } catch (err) {
+        container.innerHTML = `<p class="text-rose-500 text-sm">Failed to load jobs: ${err.message}</p>`;
+      }
+    }
+
+    async function toggleJob(jobId, newActiveState) {
+      try {
+        const res = await fetch(`/api/jobs/${jobId}/toggle`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ is_active: newActiveState })
+        });
+        const data = await res.json();
+        showToast(data.message);
+        loadJobs();
+      } catch (err) {
+        showToast(err.message, false);
+      }
+    }
+
+    async function runJobNow(jobId) {
+      showToast('Triggering immediate submission...', true);
+      try {
+        const res = await fetch(`/api/jobs/${jobId}/run-now`, { method: 'POST' });
+        const data = await res.json();
+        showToast(data.message);
+        loadJobs();
+      } catch (err) {
+        showToast(err.message, false);
+      }
+    }
+
+    async function deleteJob(jobId) {
+      if (!confirm('Are you sure you want to delete this scheduled job?')) return;
+      try {
+        const res = await fetch(`/api/jobs/${jobId}`, { method: 'DELETE' });
+        const data = await res.json();
+        showToast(data.message);
+        loadJobs();
+      } catch (err) {
+        showToast(err.message, false);
+      }
+    }
+
+    // Load Logs
+    async function loadLogs() {
+      const container = document.getElementById('logs-container');
+      try {
+        const res = await fetch('/api/logs');
+        const logs = await res.json();
+
+        if (!logs.length) {
+          container.innerHTML = `
+            <div class="text-center py-8 text-slate-400 text-sm">
+              <p>No execution records yet.</p>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = '';
+        logs.forEach(l => {
+          const item = document.createElement('div');
+          item.className = 'p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2';
+
+          const badge = l.status === 'SUCCESS' 
+            ? '<span class="px-2 py-0.5 rounded font-bold text-emerald-700 bg-emerald-100">SUCCESS</span>'
+            : '<span class="px-2 py-0.5 rounded font-bold text-rose-700 bg-rose-100">FAILED</span>';
+
+          item.innerHTML = `
+            <div class="space-y-1">
+              <div class="flex items-center space-x-2">
+                ${badge}
+                <span class="font-mono text-slate-500">${l.timestamp}</span>
+                ${l.alert_recipient ? `<span class="text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">Alert sent to: ${l.alert_recipient}</span>` : ''}
+              </div>
+              <p class="text-slate-700 font-medium">${l.message}</p>
+            </div>
+          `;
+          container.appendChild(item);
+        });
+
+      } catch (err) {
+        container.innerHTML = `<p class="text-rose-500 text-sm">Failed to load logs: ${err.message}</p>`;
+      }
+    }
+
+    // Run Submission (Console)
+    async function runSubmission(isDryRun) {
+      const consoleBox = document.getElementById('console-output');
+      const actionName = isDryRun ? 'Simulating Dry-Run' : 'Executing Live Submission';
+      consoleBox.innerText = `[${new Date().toLocaleTimeString()}] ${actionName}... Please wait...\n`;
+
+      const alertEmail = document.getElementById('cfg-alert-email').value.trim();
+      const formEmail = document.getElementById('cfg-email').value.trim();
+      const formUrl = document.getElementById('cfg-form-url').value.trim();
       const mode = document.getElementById('cfg-mode').value;
 
       const fieldRows = document.querySelectorAll('.field-row');
@@ -538,98 +773,28 @@ Ready. Click "Simulate (Dry-Run)" or "Live Submit Now" to execute.
       });
 
       try {
-        const res = await fetch('/api/config', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            form_url: formUrl,
-            email: email,
-            mode: mode,
-            fields: fields
-          })
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || 'Failed to save config');
-        showToast('Configuration successfully saved to config/form_config.yaml!');
-      } catch (err) {
-        showToast(err.message, false);
-      }
-    }
-
-    // Recalculate Cron Preview
-    function recalculateCronPreview() {
-      const tz = document.getElementById('sched-tz').value;
-      const timeStr = document.getElementById('sched-time').value || '09:30';
-      const days = Array.from(document.querySelectorAll('input[name="sched-day"]:checked')).map(cb => cb.value);
-
-      if (!days.length) {
-        document.getElementById('cron-summary').innerText = 'Select at least one day.';
-        return;
-      }
-
-      // Simple client-side visual calculation
-      const [h, m] = timeStr.split(':').map(Number);
-      let offsetMins = 0;
-      if (tz === 'Asia/Kolkata') offsetMins = 330; // +5:30
-      else if (tz === 'America/New_York') offsetMins = -300; // -5:00
-      else if (tz === 'America/Los_Angeles') offsetMins = -480; // -8:00
-      else if (tz === 'Asia/Singapore') offsetMins = 480; // +8:00
-
-      let totalMins = (h * 60 + m) - offsetMins;
-      let utcH = Math.floor((totalMins % 1440 + 1440) % 1440 / 60);
-      let utcM = (totalMins % 1440 + 1440) % 60;
-
-      const utcTimeStr = `${String(utcH).padStart(2, '0')}:${String(utcM).padStart(2, '0')} UTC`;
-      document.getElementById('cron-utc-time').innerText = utcTimeStr;
-      document.getElementById('cron-summary').innerText = `Runs at ${timeStr} in ${tz} on ${days.join(', ')}`;
-    }
-
-    // Save Schedule to GitHub Workflow
-    async function saveSchedule() {
-      const tz = document.getElementById('sched-tz').value;
-      const timeStr = document.getElementById('sched-time').value;
-      const days = Array.from(document.querySelectorAll('input[name="sched-day"]:checked')).map(cb => cb.value);
-
-      if (!days.length) {
-        showToast('Please select at least one day of the week.', false);
-        return;
-      }
-
-      try {
-        const res = await fetch('/api/schedule', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ days, time: timeStr, timezone: tz })
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || 'Failed to update schedule');
-
-        document.getElementById('cron-expr-display').innerText = data.cron;
-        showToast(data.message);
-      } catch (err) {
-        showToast(err.message, false);
-      }
-    }
-
-    // Run Submission (Dry Run or Live)
-    async function runSubmission(isDryRun) {
-      const consoleBox = document.getElementById('console-output');
-      const actionName = isDryRun ? 'Simulating Dry-Run' : 'Executing Live Submission';
-      consoleBox.innerText = `[${new Date().toLocaleTimeString()}] ${actionName}... Please wait...\n`;
-
-      try {
         const res = await fetch('/api/test-submit', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ dry_run: isDryRun })
+          body: JSON.stringify({
+            dry_run: isDryRun,
+            form_url: formUrl,
+            email: formEmail,
+            alert_email: alertEmail,
+            mode: mode,
+            fields: fields
+          })
         });
         const data = await res.json();
         
         let output = `[${new Date().toLocaleTimeString()}] Result:\n`;
         output += `Success: ${data.success ? '✅ YES' : '❌ NO'}\n`;
         output += `Status Code: ${data.status_code || 'N/A'}\n`;
-        output += `Message: ${data.message}\n\n`;
-        output += `Submitted Payload:\n${JSON.stringify(data.submitted_payload, null, 2)}\n`;
+        output += `Message: ${data.message}\n`;
+        if (data.alert_sent_to) {
+          output += `📧 Alert Notification Dispatched To: ${data.alert_sent_to}\n`;
+        }
+        output += `\nSubmitted Payload:\n${JSON.stringify(data.submitted_payload, null, 2)}\n`;
 
         if (data.error) {
           output += `\nError Details:\n${data.error}\n`;
@@ -678,13 +843,13 @@ Ready. Click "Simulate (Dry-Run)" or "Live Submit Now" to execute.
         const res = await fetch('/api/config');
         if (!res.ok) return;
         const cfg = await res.json();
-        currentConfig = cfg;
         
         if (cfg.form_url) {
           document.getElementById('cfg-form-url').value = cfg.form_url;
           document.getElementById('inspect-url-input').value = cfg.form_url;
         }
         if (cfg.email) document.getElementById('cfg-email').value = cfg.email;
+        if (cfg.alert_email) document.getElementById('cfg-alert-email').value = cfg.alert_email;
         if (cfg.mode) document.getElementById('cfg-mode').value = cfg.mode;
 
         const container = document.getElementById('cfg-fields-container');
@@ -694,6 +859,7 @@ Ready. Click "Simulate (Dry-Run)" or "Live Submit Now" to execute.
             renderFieldRow(k, v, `Field (${k})`);
           }
         }
+        loadJobs();
       } catch (e) {
         console.error("Could not load config", e);
       }
@@ -701,7 +867,6 @@ Ready. Click "Simulate (Dry-Run)" or "Live Submit Now" to execute.
 
     window.addEventListener('DOMContentLoaded', () => {
       loadInitialConfig();
-      recalculateCronPreview();
     });
   </script>
 </body>
