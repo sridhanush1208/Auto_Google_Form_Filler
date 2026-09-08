@@ -37,12 +37,23 @@ def init_db():
                 time TEXT NOT NULL,
                 timezone TEXT DEFAULT 'Asia/Kolkata',
                 cron TEXT NOT NULL,
+                schedule_type TEXT DEFAULT 'recurring',
+                target_date TEXT DEFAULT '',
                 is_active INTEGER DEFAULT 1,
                 last_run_at TEXT DEFAULT NULL,
                 last_run_status TEXT DEFAULT NULL,
                 created_at TEXT NOT NULL
             )
         """)
+        # Auto-migrate existing database tables if columns are missing
+        try:
+            cursor.execute("ALTER TABLE jobs ADD COLUMN schedule_type TEXT DEFAULT 'recurring'")
+        except Exception:
+            pass
+        try:
+            cursor.execute("ALTER TABLE jobs ADD COLUMN target_date TEXT DEFAULT ''")
+        except Exception:
+            pass
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS logs (
                 id TEXT PRIMARY KEY,
@@ -69,6 +80,8 @@ def create_job(
     alert_email: str = "",
     form_email: str = "",
     mode: str = "http",
+    schedule_type: str = "recurring",
+    target_date: str = "",
     job_id: Optional[str] = None
 ) -> str:
     """Create or update a scheduled autonomous job."""
@@ -80,8 +93,8 @@ def create_job(
         cursor = conn.cursor()
         cursor.execute("""
             INSERT OR REPLACE INTO jobs (
-                id, name, form_url, mode, form_email, alert_email, fields, days, time, timezone, cron, is_active, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
+                id, name, form_url, mode, form_email, alert_email, fields, days, time, timezone, cron, schedule_type, target_date, is_active, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
         """, (
             jid,
             name.strip() or "Untitled Form Job",
@@ -90,10 +103,12 @@ def create_job(
             form_email.strip(),
             alert_email.strip(),
             json.dumps(fields),
-            json.dumps(days),
+            json.dumps(days or []),
             time.strip(),
             timezone.strip(),
             cron.strip(),
+            schedule_type.strip().lower(),
+            target_date.strip(),
             now_str
         ))
         conn.commit()

@@ -69,6 +69,13 @@ class SaveConfigRequest(BaseModel):
     notifications: Optional[Dict[str, Any]] = None
 
 
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
+
+
+class AdminLoginRequest(BaseModel):
+    password: str
+
+
 class JobRequest(BaseModel):
     id: Optional[str] = None
     name: str = "My Scheduled Form"
@@ -77,8 +84,10 @@ class JobRequest(BaseModel):
     form_email: Optional[str] = ""
     alert_email: Optional[str] = ""
     fields: Dict[str, Any]
-    days: List[str]
-    time: str
+    schedule_type: str = "recurring"
+    target_date: Optional[str] = ""
+    days: Optional[List[str]] = []
+    time: str = "09:30"
     timezone: str = "Asia/Kolkata"
 
 
@@ -194,6 +203,20 @@ async def api_save_schedule(req: ScheduleRequest):
         raise HTTPException(status_code=400, detail=str(e))
 
 
+@app.post("/api/admin/login")
+async def api_admin_login(req: AdminLoginRequest):
+    """Authenticate administrator with secret code."""
+    admin_pw = os.getenv("ADMIN_PASSWORD", ADMIN_PASSWORD).strip()
+    if not admin_pw:
+        raise HTTPException(
+            status_code=500,
+            detail="ADMIN_PASSWORD is not configured on the server. Please add it to your Environment Variables."
+        )
+    if req.password.strip() == admin_pw:
+        return {"success": True, "token": "admin-authenticated"}
+    raise HTTPException(status_code=401, detail="Invalid secret code. Please check your password and try again.")
+
+
 # Multi-User Autonomous Jobs API
 @app.get("/api/jobs")
 async def api_get_jobs():
@@ -206,21 +229,33 @@ async def api_save_job(req: JobRequest):
     """Create or update a scheduled autonomous job in the database and register in background scheduler."""
     if not req.form_url or not req.form_url.strip():
         raise HTTPException(status_code=400, detail="Form URL is required.")
-    if not req.days:
-        raise HTTPException(status_code=400, detail="At least one day of the week must be selected.")
 
-    cron_expr, _ = local_to_utc_cron(req.days, req.time, tz_name=req.timezone)
+    schedule_type = (req.schedule_type or "recurring").lower()
+
+    if schedule_type == "once":
+        if not req.target_date or not req.target_date.strip():
+            raise HTTPException(status_code=400, detail="Please select a specific date for submission.")
+        cron_expr = f"once@{req.target_date}_{req.time}"
+        days = []
+    else:
+        if not req.days:
+            raise HTTPException(status_code=400, detail="At least one day of the week must be selected for recurring schedule.")
+        cron_expr, _ = local_to_utc_cron(req.days, req.time, tz_name=req.timezone)
+        days = req.days
+
     job_id = create_job(
         name=req.name,
         form_url=req.form_url,
         fields=req.fields,
-        days=req.days,
+        days=days,
         time=req.time,
         timezone=req.timezone,
         cron=cron_expr,
         alert_email=req.alert_email or "",
         form_email=req.form_email or "",
         mode=req.mode,
+        schedule_type=schedule_type,
+        target_date=req.target_date or "",
         job_id=req.id
     )
 
@@ -231,7 +266,7 @@ async def api_save_job(req: JobRequest):
     return {
         "success": True,
         "job_id": job_id,
-        "message": f"Job '{req.name}' successfully scheduled and running in background!",
+        "message": f"Form '{req.name}' successfully scheduled and active!",
         "job": job_data
     }
 

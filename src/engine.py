@@ -5,8 +5,9 @@ from typing import Dict, Any, Optional
 import pytz
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
+from apscheduler.triggers.date import DateTrigger
 
-from src.db import get_all_jobs, get_job, update_job_last_run, log_execution
+from src.db import get_all_jobs, get_job, update_job_last_run, log_execution, toggle_job
 from src.filler.http_filler import HttpFormFiller
 from src.filler.browser_filler import BrowserFormFiller
 from src.utils.notifier import EmailNotifier
@@ -59,10 +60,17 @@ def run_scheduled_job(job_id: str):
     result = filler.submit(fields=fields, email=form_email, dry_run=False, tz_name=tz_name)
 
     status_str = "SUCCESS" if result.success else "FAILED"
-    update_job_last_run(job_id, status_str)
+    is_one_time = (job.get("schedule_type") == "once")
+    if is_one_time and result.success:
+        update_job_last_run(job_id, "COMPLETED")
+        toggle_job(job_id, False)
+        unschedule_job_in_memory(job_id)
+    else:
+        update_job_last_run(job_id, status_str)
+
     log_execution(
         job_id=job_id,
-        status=status_str,
+        status="COMPLETED" if (is_one_time and result.success) else status_str,
         message=result.message,
         alert_recipient=alert_email,
         payload=result.submitted_payload
@@ -95,6 +103,39 @@ def schedule_job_in_memory(job: Dict[str, Any]):
     if not job.get("is_active"):
         return
 
+    tz_name = job.get("timezone", "Asia/Kolkata")
+    try:
+        tz = pytz.timezone(tz_name)
+    except Exception:
+        tz = pytz.timezone("Asia/Kolkata")
+
+    schedule_type = job.get("schedule_type", "recurring")
+
+    # Specific One-time Date Execution
+    if schedule_type == "once":
+        target_date = job.get("target_date")
+        time_str = job.get("time", "09:30").strip()
+        if not target_date:
+            return
+        try:
+            dt_str = f"{target_date} {time_str}"
+            naive_dt = datetime.strptime(dt_str, "%Y-%m-%d %H:%M")
+            localized_dt = tz.localize(naive_dt)
+            trigger = DateTrigger(run_date=localized_dt, timezone=tz)
+            scheduler.add_job(
+                run_scheduled_job,
+                trigger=trigger,
+                args=[job_id],
+                id=job_id,
+                name=job.get("name", job_id),
+                replace_existing=True
+            )
+            logger.info(f"✅ Registered one-time job [{job_id}] for {localized_dt}")
+        except Exception as e:
+            logger.error(f"Failed to schedule one-time job [{job_id}]: {e}")
+        return
+
+    # Recurring Schedule Execution
     days_list = job.get("days", [])
     if not days_list:
         return
@@ -120,12 +161,6 @@ def schedule_job_in_memory(job: Dict[str, Any]):
     except Exception:
         hour = 9
         minute = 30
-
-    tz_name = job.get("timezone", "Asia/Kolkata")
-    try:
-        tz = pytz.timezone(tz_name)
-    except Exception:
-        tz = pytz.timezone("Asia/Kolkata")
 
     trigger = CronTrigger(
         day_of_week=days_str,

@@ -9,7 +9,20 @@ def test_index_page():
     response = client.get("/")
     assert response.status_code == 200
     assert "Auto Google Form Filler" in response.text
-    assert "Form Inspector" in response.text
+    assert "Admin Mode" in response.text
+
+
+def test_admin_login(monkeypatch):
+    monkeypatch.setenv("ADMIN_PASSWORD", "test-mock-secret-key")
+
+    # Invalid password
+    bad_res = client.post("/api/admin/login", json={"password": "WrongPassword"})
+    assert bad_res.status_code == 401
+
+    # Valid password
+    good_res = client.post("/api/admin/login", json={"password": "test-mock-secret-key"})
+    assert good_res.status_code == 200
+    assert good_res.json()["success"] is True
 
 
 def test_api_schedule_endpoint():
