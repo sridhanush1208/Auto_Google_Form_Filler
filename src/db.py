@@ -57,6 +57,10 @@ def init_db():
             cursor.execute("ALTER TABLE jobs ADD COLUMN form_title TEXT DEFAULT ''")
         except Exception:
             pass
+        try:
+            cursor.execute("ALTER TABLE jobs ADD COLUMN last_run_message TEXT DEFAULT ''")
+        except Exception:
+            pass
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS settings (
                 key TEXT PRIMARY KEY,
@@ -127,14 +131,14 @@ def create_job(
 
 
 def check_and_expire_past_jobs() -> None:
-    """Detect any one-time jobs whose scheduled date has passed without executing and mark them EXPIRED."""
+    """Detect any one-time jobs whose scheduled date has passed without executing (e.g. paused/frozen or offline) and mark them EXPIRED."""
     now_utc = datetime.now(pytz.UTC)
     with get_connection() as conn:
         cursor = conn.cursor()
         cursor.execute("""
             SELECT id, schedule_type, target_date, time, timezone, is_active, last_run_status
             FROM jobs
-            WHERE schedule_type = 'once' AND (last_run_status IS NULL OR (last_run_status != 'COMPLETED' AND last_run_status != 'EXPIRED'))
+            WHERE schedule_type = 'once' AND last_run_status IS NULL
         """)
         rows = cursor.fetchall()
         for r in rows:
@@ -149,7 +153,7 @@ def check_and_expire_past_jobs() -> None:
                     if scheduled_dt < now_utc:
                         cursor.execute("""
                             UPDATE jobs
-                            SET last_run_status = 'EXPIRED', is_active = 0, last_run_at = ?
+                            SET last_run_status = 'EXPIRED', is_active = 0, last_run_at = ?, last_run_message = 'Scheduled date passed while frozen or before execution'
                             WHERE id = ?
                         """, (now_utc.strftime("%Y-%m-%d %H:%M:%S UTC"), r["id"]))
                 except Exception:
@@ -213,13 +217,13 @@ def toggle_job(job_id: str, is_active: bool) -> bool:
         return cursor.rowcount > 0
 
 
-def update_job_last_run(job_id: str, status: str):
-    """Update last run time and status for a job."""
+def update_job_last_run(job_id: str, status: str, message: str = ""):
+    """Update last run time, status, and message for a job."""
     init_db()
     now_str = datetime.now(pytz.UTC).strftime("%Y-%m-%d %H:%M:%S UTC")
     with get_connection() as conn:
         cursor = conn.cursor()
-        cursor.execute("UPDATE jobs SET last_run_at = ?, last_run_status = ? WHERE id = ?", (now_str, status, job_id))
+        cursor.execute("UPDATE jobs SET last_run_at = ?, last_run_status = ?, last_run_message = ? WHERE id = ?", (now_str, status, message, job_id))
         conn.commit()
 
 

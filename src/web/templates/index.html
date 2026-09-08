@@ -646,6 +646,18 @@
               ${field.options.map(opt => `<option value="${opt.replace(/"/g, '&quot;')}">${opt}</option>`).join('')}
             </select>
           `;
+        } else if (field.options && field.options.length && field.type !== 'Paragraph') {
+          // Linear scale, Rating, or any list with defined options
+          controlHtml = `
+            <div class="flex flex-wrap items-center gap-2 pt-1">
+              ${field.options.map((opt, idx) => `
+                <label class="flex items-center space-x-1.5 py-1.5 px-3 border border-slate-300 rounded-xl hover:border-indigo-400 cursor-pointer text-xs font-semibold transition bg-white has-[:checked]:border-indigo-600 has-[:checked]:bg-indigo-50 has-[:checked]:text-indigo-700 shadow-2xs">
+                  <input type="radio" name="${key}" value="${opt.replace(/"/g, '&quot;')}" ${idx === 0 ? 'checked' : ''} class="w-3.5 h-3.5 text-indigo-600 focus:ring-indigo-500">
+                  <span>${opt}</span>
+                </label>
+              `).join('')}
+            </div>
+          `;
         } else if (field.type === 'Paragraph') {
           controlHtml = `
             <textarea name="${key}" rows="3" placeholder="Your answer" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 bg-white focus:ring-2 focus:ring-indigo-500">${field.prefilled_value || ''}</textarea>
@@ -705,9 +717,9 @@
         const key = card.dataset.entryKey;
         const type = card.dataset.fieldType;
 
-        if (type === 'Multiple choice') {
-          const checked = card.querySelector(`input[name="${key}"]:checked`);
-          if (checked) fields[key] = checked.value;
+        const checkedRadio = card.querySelector(`input[name="${key}"][type="radio"]:checked`);
+        if (checkedRadio) {
+          fields[key] = checkedRadio.value;
         } else if (type === 'Checkboxes') {
           const checkedList = Array.from(card.querySelectorAll(`input[name="${key}"]:checked`)).map(c => c.value);
           if (checkedList.length) fields[key] = checkedList;
@@ -727,7 +739,7 @@
         name: submitterName,
         form_title: formTitle,
         form_url: activeInspectedData ? activeInspectedData.form_url : document.getElementById('user-form-url').value.trim(),
-        form_email: email,
+        form_email: activeInspectedData && activeInspectedData.collects_email ? email : '',
         alert_email: email,
         fields: fields,
         timezone: timezone,
@@ -948,8 +960,9 @@
 
     function isJobExpired(job) {
       if (job.schedule_type !== 'once') return false;
-      if (job.last_run_status === 'COMPLETED') return false;
       if (job.last_run_status === 'EXPIRED') return true;
+      // If it already executed (COMPLETED, SUCCESS, or FAILED), it has run and is NOT expired!
+      if (job.last_run_status) return false;
       if (!job.target_date) return false;
       try {
         const timeStr = job.time || '09:30';
@@ -1001,9 +1014,9 @@
     }
 
     function updateAdminCounters() {
-      const scheduled = allAdminJobs.filter(j => j.is_active && j.last_run_status !== 'COMPLETED' && !isJobExpired(j));
-      const paused = allAdminJobs.filter(j => !j.is_active && j.last_run_status !== 'COMPLETED' && !isJobExpired(j));
-      const completed = allAdminJobs.filter(j => j.last_run_status === 'COMPLETED' || isJobExpired(j) || (j.schedule_type === 'once' && !j.is_active && j.last_run_at));
+      const scheduled = allAdminJobs.filter(j => j.is_active && (j.schedule_type === 'recurring' || (!j.last_run_status && !isJobExpired(j))));
+      const paused = allAdminJobs.filter(j => !j.is_active && (j.schedule_type === 'recurring' || (!j.last_run_status && !isJobExpired(j))));
+      const completed = allAdminJobs.filter(j => j.last_run_status === 'COMPLETED' || j.last_run_status === 'SUCCESS' || j.last_run_status === 'FAILED' || j.last_run_status === 'EXPIRED' || (j.schedule_type === 'once' && (j.last_run_at || isJobExpired(j))));
 
       document.getElementById('badge-count-scheduled').innerText = scheduled.length;
       document.getElementById('badge-count-paused').innerText = paused.length;
@@ -1016,11 +1029,11 @@
 
       let filtered = [];
       if (currentAdminTab === 'scheduled') {
-        filtered = allAdminJobs.filter(j => j.is_active && j.last_run_status !== 'COMPLETED' && !isJobExpired(j));
+        filtered = allAdminJobs.filter(j => j.is_active && (j.schedule_type === 'recurring' || (!j.last_run_status && !isJobExpired(j))));
       } else if (currentAdminTab === 'paused') {
-        filtered = allAdminJobs.filter(j => !j.is_active && j.last_run_status !== 'COMPLETED' && !isJobExpired(j));
+        filtered = allAdminJobs.filter(j => !j.is_active && (j.schedule_type === 'recurring' || (!j.last_run_status && !isJobExpired(j))));
       } else if (currentAdminTab === 'completed') {
-        filtered = allAdminJobs.filter(j => j.last_run_status === 'COMPLETED' || isJobExpired(j) || (j.schedule_type === 'once' && !j.is_active && j.last_run_at));
+        filtered = allAdminJobs.filter(j => j.last_run_status === 'COMPLETED' || j.last_run_status === 'SUCCESS' || j.last_run_status === 'FAILED' || j.last_run_status === 'EXPIRED' || (j.schedule_type === 'once' && (j.last_run_at || isJobExpired(j))));
       }
 
       if (!filtered.length) {
@@ -1082,13 +1095,12 @@
             </button>
           `;
         } else { // completed
-          const expired = isJobExpired(job);
-          if (expired && job.last_run_status !== 'COMPLETED') {
-            statusBadge = '<span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-200">Expired</span>';
-          } else if (job.last_run_status === 'COMPLETED' || job.last_run_status === 'SUCCESS') {
-            statusBadge = '<span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-800">Completed</span>';
+          if (job.last_run_status === 'COMPLETED' || job.last_run_status === 'SUCCESS') {
+            statusBadge = '<span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">Completed</span>';
+          } else if (job.last_run_status === 'FAILED') {
+            statusBadge = '<span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-100 text-rose-800 border border-rose-200">Failed</span>';
           } else {
-            statusBadge = '<span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-100 text-rose-800">Failed</span>';
+            statusBadge = '<span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-200">Expired</span>';
           }
           actionButtons = `
             <button onclick="adminDeleteJob('${job.id}')" class="px-3 py-1.5 rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-50 text-xs font-semibold transition flex items-center space-x-1">
@@ -1098,10 +1110,15 @@
         }
 
         let execInfo = '';
-        if (isJobExpired(job) && job.last_run_status !== 'COMPLETED') {
-          execInfo = '<span class="text-amber-700 font-semibold">Expired (Scheduled date passed)</span>';
+        if (job.last_run_status === 'COMPLETED' || job.last_run_status === 'SUCCESS') {
+          execInfo = `<span class="text-emerald-700 font-semibold">${job.last_run_at || ''} (Completed successfully)</span>`;
+        } else if (job.last_run_status === 'FAILED') {
+          const reason = job.last_run_message ? ` - ${job.last_run_message}` : '';
+          execInfo = `<span class="text-rose-600 font-semibold">${job.last_run_at || ''} (Failed${reason})</span>`;
+        } else if (isJobExpired(job) || job.last_run_status === 'EXPIRED') {
+          execInfo = '<span class="text-amber-700 font-semibold">Expired (Scheduled date passed while frozen)</span>';
         } else {
-          execInfo = job.last_run_at ? `${job.last_run_at} (${job.last_run_status})` : '<span class="text-slate-400">Pending Run</span>';
+          execInfo = '<span class="text-slate-400">Pending Run</span>';
         }
 
         card.innerHTML = `
