@@ -19,7 +19,7 @@ from src.utils.notifier import EmailNotifier
 from src.utils.date_resolver import get_current_time
 from src.db import (
     init_db, create_job, get_all_jobs, get_job, delete_job,
-    toggle_job, get_logs, log_execution
+    toggle_job, get_logs, log_execution, get_setting, set_setting
 )
 from src.engine import (
     init_scheduler, schedule_job_in_memory,
@@ -79,6 +79,7 @@ class AdminLoginRequest(BaseModel):
 class JobRequest(BaseModel):
     id: Optional[str] = None
     name: str = "My Scheduled Form"
+    form_title: Optional[str] = ""
     form_url: str
     mode: str = "http"
     form_email: Optional[str] = ""
@@ -256,6 +257,7 @@ async def api_save_job(req: JobRequest):
         mode=req.mode,
         schedule_type=schedule_type,
         target_date=req.target_date or "",
+        form_title=req.form_title or "",
         job_id=req.id
     )
 
@@ -385,4 +387,94 @@ async def api_test_email(req: TestEmailRequest):
     if ok:
         return {"success": True, "message": f"Test email sent successfully to {notifier.recipient_email}!"}
     else:
-        raise HTTPException(status_code=500, detail="Failed to send test email. Check your SMTP host, port, or App Password.")
+        err = notifier.last_error or "Check your SMTP host, port, or App Password."
+        raise HTTPException(status_code=500, detail=f"Failed to send test email: {err}")
+
+
+class SmtpConfigRequest(BaseModel):
+    smtp_host: Optional[str] = "smtp.gmail.com"
+    smtp_port: Optional[int] = 587
+    smtp_user: str
+    smtp_password: Optional[str] = ""
+    recipient_email: Optional[str] = ""
+
+
+@app.get("/api/admin/smtp")
+async def api_get_admin_smtp():
+    """Retrieve current SMTP status and sender email without exposing password."""
+    user = os.getenv("SMTP_USER") or get_setting("smtp_user", "")
+    host = os.getenv("SMTP_HOST") or get_setting("smtp_host", "smtp.gmail.com")
+    port = os.getenv("SMTP_PORT") or get_setting("smtp_port", "587")
+    has_pass = bool(os.getenv("SMTP_PASSWORD") or get_setting("smtp_password", ""))
+    return {
+        "configured": bool(user and has_pass),
+        "smtp_user": user,
+        "smtp_host": host,
+        "smtp_port": int(port)
+    }
+
+
+@app.post("/api/admin/smtp")
+async def api_save_admin_smtp(req: SmtpConfigRequest):
+    """Save SMTP sender credentials into persistent settings."""
+    if not req.smtp_user or not req.smtp_user.strip():
+        raise HTTPException(status_code=400, detail="Sender email address is required.")
+    
+    set_setting("smtp_user", req.smtp_user.strip())
+    set_setting("smtp_host", (req.smtp_host or "smtp.gmail.com").strip())
+    set_setting("smtp_port", str(req.smtp_port or 587).strip())
+    if req.smtp_password and req.smtp_password.strip():
+        set_setting("smtp_password", req.smtp_password.strip())
+    
+    return {"success": True, "message": "Email settings saved successfully!"}
+
+
+@app.post("/api/admin/smtp/test")
+async def api_admin_test_email(req: SmtpConfigRequest):
+    """Save and test email delivery live."""
+    user = req.smtp_user.strip() if req.smtp_user else (os.getenv("SMTP_USER") or get_setting("smtp_user", ""))
+    password = req.smtp_password.strip() if req.smtp_password else (os.getenv("SMTP_PASSWORD") or get_setting("smtp_password", ""))
+    recipient = (req.recipient_email or user).strip()
+
+    if not user or not password:
+        raise HTTPException(status_code=400, detail="Both Gmail address and 16-character App Password are required.")
+    
+    # Persist settings
+    set_setting("smtp_user", user)
+    if req.smtp_password and req.smtp_password.strip():
+        set_setting("smtp_password", req.smtp_password.strip())
+    if req.smtp_host:
+        set_setting("smtp_host", req.smtp_host.strip())
+    if req.smtp_port:
+        set_setting("smtp_port", str(req.smtp_port))
+
+    notifier = EmailNotifier(
+        smtp_host=req.smtp_host or "smtp.gmail.com",
+        smtp_port=req.smtp_port or 587,
+        smtp_user=user,
+        smtp_password=password,
+        recipient_email=recipient
+    )
+
+    now = get_current_time().strftime("%Y-%m-%d %H:%M:%S")
+    ok = notifier.send_email(
+        subject="✅ Auto Google Form Filler - SMTP Test Verification",
+        body_text=f"Success! Your Google Form email notifications are configured and working properly. Dispatched to {recipient} at {now}.",
+        body_html=f"""
+        <div style="font-family:sans-serif;padding:20px;max-width:500px;border:1px solid #e2e8f0;border-radius:10px;">
+          <h2 style="color:#16a34a;margin-top:0;">✅ Email Alerts Are Active!</h2>
+          <p>Your SMTP credentials are valid and can send automated Google Form submission receipts.</p>
+          <hr style="border:none;border-top:1px solid #e2e8f0;margin:16px 0;" />
+          <p style="font-size:13px;color:#64748b;"><strong>Sender:</strong> {user}<br/><strong>Recipient:</strong> {recipient}<br/><strong>Timestamp:</strong> {now}</p>
+        </div>
+        """
+    )
+
+    if ok:
+        return {
+            "success": True,
+            "message": f"Test email sent successfully to {recipient}! Please check your inbox (and Spam folder)."
+        }
+    else:
+        err = notifier.last_error or "Unknown SMTP authentication error. Please verify your App Password."
+        raise HTTPException(status_code=500, detail=f"Failed to send email: {err}")

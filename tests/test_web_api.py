@@ -110,3 +110,24 @@ def test_api_logs_endpoint():
     assert isinstance(res.json(), list)
 
 
+def test_admin_smtp_endpoints():
+    # Save settings
+    save_res = client.post("/api/admin/smtp", json={
+        "smtp_user": "testbot@gmail.com",
+        "smtp_password": "apppassword1234",
+        "smtp_host": "smtp.gmail.com",
+        "smtp_port": 587
+    })
+    assert save_res.status_code == 200
+    assert save_res.json()["success"] is True
+
+    # Retrieve status (password is hidden)
+    get_res = client.get("/api/admin/smtp")
+    assert get_res.status_code == 200
+    data = get_res.json()
+    assert data["configured"] is True
+    assert data["smtp_user"] == "testbot@gmail.com"
+    assert "smtp_password" not in data
+
+
+

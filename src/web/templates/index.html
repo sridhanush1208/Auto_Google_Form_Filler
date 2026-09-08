@@ -114,12 +114,26 @@
       <!-- STEP 1: Form Link Input -->
       <div id="user-step-1" class="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm space-y-5">
         <div class="space-y-1">
-          <h2 class="text-xl font-bold text-slate-900">Enter Your Google Form Link</h2>
-          <p class="text-xs text-slate-500">Paste any Google Form link (e.g., https://forms.gle/... or viewform URL).</p>
+          <h2 class="text-xl font-bold text-slate-900">Enter Your Form Details</h2>
+          <p class="text-xs text-slate-500">Provide your name and paste your Google Form link.</p>
         </div>
 
-        <div class="space-y-3">
-          <input type="text" id="user-form-url" placeholder="https://forms.gle/..." class="w-full px-4 py-3 text-sm rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+        <div class="space-y-4">
+          <div class="space-y-1.5">
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+              Your Name / Submitter Name <span class="text-rose-500">*</span>
+            </label>
+            <input type="text" id="user-submitter-name" placeholder="e.g. Dhanush, Rahul, Standup..." class="w-full px-4 py-3 text-sm rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+            <p class="text-[11px] text-slate-400">This helps identify your submission in the admin dashboard.</p>
+          </div>
+
+          <div class="space-y-1.5">
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+              Google Form URL <span class="text-rose-500">*</span>
+            </label>
+            <input type="text" id="user-form-url" placeholder="https://forms.gle/... or docs.google.com/forms/..." class="w-full px-4 py-3 text-sm rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+          </div>
+
           <button onclick="handleInspectForUser()" id="btn-analyze-form" class="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold shadow-sm transition flex items-center justify-center space-x-2">
             <span>Analyze Form</span>
             <i class="fa-solid fa-arrow-right text-xs"></i>
@@ -302,6 +316,59 @@
         </div>
       </div>
 
+      <!-- SMTP Email Alert Status & Configuration -->
+      <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-2.5">
+            <div id="smtp-status-dot" class="w-3 h-3 rounded-full bg-slate-300 shrink-0"></div>
+            <div>
+              <h3 class="text-xs font-bold text-slate-900">Email Alerts Delivery System</h3>
+              <p id="smtp-status-text" class="text-[11px] text-slate-500">Checking SMTP configuration status...</p>
+            </div>
+          </div>
+          <button onclick="toggleSmtpPanel()" id="btn-toggle-smtp" class="px-3 py-1.5 rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold transition flex items-center space-x-1.5">
+            <i class="fa-solid fa-gear text-slate-400"></i>
+            <span id="smtp-btn-text">Configure Email Alerts</span>
+          </button>
+        </div>
+
+        <!-- Collapsible Email Settings Form -->
+        <div id="smtp-config-panel" class="hidden pt-3 border-t border-slate-100 space-y-3 text-xs">
+          <div class="bg-indigo-50/70 p-3 rounded-xl border border-indigo-100 text-slate-600 space-y-1">
+            <p class="font-bold text-indigo-950 flex items-center space-x-1">
+              <i class="fa-brands fa-google text-indigo-600 mr-1"></i> How to setup Gmail alerts in 1 minute:
+            </p>
+            <p>1. In your Gmail account, make sure 2-Step Verification is ON.</p>
+            <p>2. Create a 16-character App Password at <a href="https://myaccount.google.com/apppasswords" target="_blank" class="text-indigo-600 font-bold underline">myaccount.google.com/apppasswords</a> (App name: "Form Filler").</p>
+            <p>3. Enter your Gmail and 16-character password below and click <strong>"Save & Send Test Email"</strong>.</p>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="space-y-1">
+              <label class="block font-bold text-slate-700 uppercase tracking-wider text-[10px]">Sender Gmail Address</label>
+              <input type="email" id="smtp-input-user" placeholder="yourbot@gmail.com" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50/50">
+            </div>
+            <div class="space-y-1">
+              <label class="block font-bold text-slate-700 uppercase tracking-wider text-[10px]">Gmail 16-character App Password</label>
+              <input type="password" id="smtp-input-pass" placeholder="xxxx xxxx xxxx xxxx" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50/50">
+            </div>
+          </div>
+
+          <div class="space-y-1">
+            <label class="block font-bold text-slate-700 uppercase tracking-wider text-[10px]">Send Verification Test Email To</label>
+            <input type="email" id="smtp-input-recipient" placeholder="yourpersonal@gmail.com" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50/50">
+          </div>
+
+          <div class="flex items-center justify-between pt-1">
+            <span id="smtp-test-result" class="text-xs"></span>
+            <button onclick="saveAndTestSmtp()" id="btn-save-test-smtp" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition flex items-center space-x-1.5 shadow-xs">
+              <i class="fa-solid fa-paper-plane"></i>
+              <span>Save & Send Test Email</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Admin 3 Category Tabs -->
       <div class="flex items-center space-x-2 border-b border-slate-200">
         <button id="admin-tab-btn-scheduled" onclick="switchAdminTab('scheduled')" class="py-2.5 px-4 text-xs font-bold border-b-2 border-indigo-600 text-indigo-600 flex items-center space-x-2 transition">
@@ -412,9 +479,17 @@
 
     // Step 1: Inspect Google Form
     async function handleInspectForUser() {
+      const name = document.getElementById('user-submitter-name').value.trim();
+      if (!name) {
+        showToast('Please enter your name', false);
+        document.getElementById('user-submitter-name').focus();
+        return;
+      }
+
       const url = document.getElementById('user-form-url').value.trim();
       if (!url) {
         showToast('Please enter a Google Form URL', false);
+        document.getElementById('user-form-url').focus();
         return;
       }
 
@@ -568,8 +643,11 @@
       });
 
       const timezone = document.getElementById('user-sched-tz').value;
+      const submitterName = (document.getElementById('user-submitter-name').value || '').trim() || 'Anonymous Submitter';
+      const formTitle = activeInspectedData ? activeInspectedData.title : 'Google Form';
       let schedulePayload = {
-        name: activeInspectedData ? activeInspectedData.title : 'Google Form',
+        name: submitterName,
+        form_title: formTitle,
         form_url: activeInspectedData ? activeInspectedData.form_url : document.getElementById('user-form-url').value.trim(),
         form_email: email,
         alert_email: email,
@@ -671,6 +749,7 @@
       document.getElementById('view-welcome').classList.add('hidden');
       document.getElementById('view-user-flow').classList.add('hidden');
       document.getElementById('view-admin').classList.remove('hidden');
+      checkSmtpStatus();
       loadAdminJobs();
     }
 
@@ -680,8 +759,131 @@
       showToast('Logged out of Admin mode');
     }
 
+    function copyToClipboard(text, btn) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+          showToast('Form link copied to clipboard!');
+          const orig = btn.innerHTML;
+          btn.innerHTML = '<i class="fa-solid fa-check text-emerald-600"></i>';
+          setTimeout(() => { btn.innerHTML = orig; }, 1500);
+        }).catch(() => fallbackCopy(text, btn));
+      } else {
+        fallbackCopy(text, btn);
+      }
+    }
+
+    function fallbackCopy(text, btn) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast('Form link copied to clipboard!');
+      if (btn) {
+        const orig = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-check text-emerald-600"></i>';
+        setTimeout(() => { btn.innerHTML = orig; }, 1500);
+      }
+    }
+
+    async function checkSmtpStatus() {
+      const dot = document.getElementById('smtp-status-dot');
+      const text = document.getElementById('smtp-status-text');
+      const userField = document.getElementById('smtp-input-user');
+      try {
+        const res = await fetch('/api/admin/smtp');
+        const data = await res.json();
+        if (data.configured) {
+          dot.className = 'w-3 h-3 rounded-full bg-emerald-500 shrink-0';
+          text.innerHTML = `<span class="text-emerald-700 font-semibold">Active &bull; Sending automated alerts via</span> <strong class="text-slate-800">${data.smtp_user}</strong>`;
+          if (userField && !userField.value) userField.value = data.smtp_user;
+        } else {
+          dot.className = 'w-3 h-3 rounded-full bg-rose-500 shrink-0';
+          text.innerHTML = `<span class="text-rose-600 font-semibold">Not Configured</span> &bull; Confirmation emails cannot be delivered until Gmail App Password is configured below.`;
+        }
+      } catch (e) {
+        dot.className = 'w-3 h-3 rounded-full bg-slate-300 shrink-0';
+        text.innerText = 'Unable to check SMTP status.';
+      }
+    }
+
+    function toggleSmtpPanel() {
+      const panel = document.getElementById('smtp-config-panel');
+      const btnText = document.getElementById('smtp-btn-text');
+      if (panel.classList.contains('hidden')) {
+        panel.classList.remove('hidden');
+        btnText.innerText = 'Hide Email Settings';
+      } else {
+        panel.classList.add('hidden');
+        btnText.innerText = 'Configure Email Alerts';
+      }
+    }
+
+    async function saveAndTestSmtp() {
+      const user = document.getElementById('smtp-input-user').value.trim();
+      const pass = document.getElementById('smtp-input-pass').value.trim();
+      const recipient = document.getElementById('smtp-input-recipient').value.trim() || user;
+      const statusSpan = document.getElementById('smtp-test-result');
+
+      if (!user) {
+        showToast('Please enter your Gmail address', false);
+        return;
+      }
+      if (!pass) {
+        showToast('Please enter your 16-character Gmail App Password', false);
+        return;
+      }
+
+      const btn = document.getElementById('btn-save-test-smtp');
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> <span>Verifying & Sending...</span>';
+      btn.disabled = true;
+      statusSpan.innerText = '';
+
+      try {
+        const res = await fetch('/api/admin/smtp/test', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            smtp_user: user,
+            smtp_password: pass,
+            recipient_email: recipient
+          })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Email delivery failed');
+
+        showToast(data.message);
+        statusSpan.innerHTML = `<span class="text-emerald-600 font-bold"><i class="fa-solid fa-check mr-1"></i> Success! Sent to ${recipient}</span>`;
+        checkSmtpStatus();
+      } catch (err) {
+        showToast(err.message, false);
+        statusSpan.innerHTML = `<span class="text-rose-600 font-bold"><i class="fa-solid fa-triangle-exclamation mr-1"></i> ${err.message}</span>`;
+      } finally {
+        btn.innerHTML = '<i class="fa-solid fa-paper-plane mr-1"></i> <span>Save & Send Test Email</span>';
+        btn.disabled = false;
+      }
+    }
+
     let allAdminJobs = [];
     let currentAdminTab = 'scheduled';
+
+    function isJobExpired(job) {
+      if (job.schedule_type !== 'once') return false;
+      if (job.last_run_status === 'COMPLETED') return false;
+      if (job.last_run_status === 'EXPIRED') return true;
+      if (!job.target_date) return false;
+      try {
+        const timeStr = job.time || '09:30';
+        const parts = timeStr.split(':');
+        const h = parseInt(parts[0], 10);
+        const m = parseInt(parts[1] || '0', 10);
+        const scheduledDt = new Date(`${job.target_date}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`);
+        return scheduledDt < new Date();
+      } catch (e) {
+        return false;
+      }
+    }
 
     function switchAdminTab(tab) {
       currentAdminTab = tab;
@@ -700,7 +902,7 @@
       } else if (tab === 'paused') {
         desc.innerHTML = '<i class="fa-solid fa-snowflake mr-1.5 text-amber-500"></i> Frozen recurring forms. These will NOT trigger until you click "Make Active".';
       } else {
-        desc.innerHTML = '<i class="fa-solid fa-circle-check mr-1.5 text-emerald-500"></i> Completed one-time submissions that have already executed on their scheduled date.';
+        desc.innerHTML = '<i class="fa-solid fa-circle-check mr-1.5 text-emerald-500"></i> Completed submissions and expired date runs.';
       }
 
       renderAdminJobs();
@@ -721,9 +923,9 @@
     }
 
     function updateAdminCounters() {
-      const scheduled = allAdminJobs.filter(j => j.is_active && j.last_run_status !== 'COMPLETED');
-      const paused = allAdminJobs.filter(j => !j.is_active && j.last_run_status !== 'COMPLETED');
-      const completed = allAdminJobs.filter(j => j.last_run_status === 'COMPLETED' || (j.schedule_type === 'once' && !j.is_active && j.last_run_at));
+      const scheduled = allAdminJobs.filter(j => j.is_active && j.last_run_status !== 'COMPLETED' && !isJobExpired(j));
+      const paused = allAdminJobs.filter(j => !j.is_active && j.last_run_status !== 'COMPLETED' && !isJobExpired(j));
+      const completed = allAdminJobs.filter(j => j.last_run_status === 'COMPLETED' || isJobExpired(j) || (j.schedule_type === 'once' && !j.is_active && j.last_run_at));
 
       document.getElementById('badge-count-scheduled').innerText = scheduled.length;
       document.getElementById('badge-count-paused').innerText = paused.length;
@@ -736,11 +938,11 @@
 
       let filtered = [];
       if (currentAdminTab === 'scheduled') {
-        filtered = allAdminJobs.filter(j => j.is_active && j.last_run_status !== 'COMPLETED');
+        filtered = allAdminJobs.filter(j => j.is_active && j.last_run_status !== 'COMPLETED' && !isJobExpired(j));
       } else if (currentAdminTab === 'paused') {
-        filtered = allAdminJobs.filter(j => !j.is_active && j.last_run_status !== 'COMPLETED');
+        filtered = allAdminJobs.filter(j => !j.is_active && j.last_run_status !== 'COMPLETED' && !isJobExpired(j));
       } else if (currentAdminTab === 'completed') {
-        filtered = allAdminJobs.filter(j => j.last_run_status === 'COMPLETED' || (j.schedule_type === 'once' && !j.is_active && j.last_run_at));
+        filtered = allAdminJobs.filter(j => j.last_run_status === 'COMPLETED' || isJobExpired(j) || (j.schedule_type === 'once' && !j.is_active && j.last_run_at));
       }
 
       if (!filtered.length) {
@@ -754,7 +956,7 @@
         } else if (currentAdminTab === 'completed') {
           emptyIcon = 'fa-circle-check';
           emptyMsg = 'No completed executions yet.';
-          emptySub = 'Forms scheduled for a particular date & time will automatically appear here once submitted.';
+          emptySub = 'Completed forms and expired date submissions will appear here.';
         }
         container.innerHTML = `
           <div class="text-center py-12 bg-white rounded-2xl border border-dashed border-slate-200 space-y-2">
@@ -802,10 +1004,14 @@
             </button>
           `;
         } else { // completed
-          const isSuccess = job.last_run_status === 'COMPLETED' || job.last_run_status === 'SUCCESS';
-          statusBadge = isSuccess
-            ? '<span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-800">Completed</span>'
-            : '<span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-100 text-rose-800">Failed</span>';
+          const expired = isJobExpired(job);
+          if (expired && job.last_run_status !== 'COMPLETED') {
+            statusBadge = '<span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-200">Expired</span>';
+          } else if (job.last_run_status === 'COMPLETED' || job.last_run_status === 'SUCCESS') {
+            statusBadge = '<span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-800">Completed</span>';
+          } else {
+            statusBadge = '<span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-100 text-rose-800">Failed</span>';
+          }
           actionButtons = `
             <button onclick="adminDeleteJob('${job.id}')" class="px-3 py-1.5 rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-50 text-xs font-semibold transition flex items-center space-x-1">
               <i class="fa-solid fa-trash"></i> <span>Remove</span>
@@ -813,25 +1019,42 @@
           `;
         }
 
+        let execInfo = '';
+        if (isJobExpired(job) && job.last_run_status !== 'COMPLETED') {
+          execInfo = '<span class="text-amber-700 font-semibold">Expired (Scheduled date passed)</span>';
+        } else {
+          execInfo = job.last_run_at ? `${job.last_run_at} (${job.last_run_status})` : '<span class="text-slate-400">Pending Run</span>';
+        }
+
         card.innerHTML = `
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
-            <div>
-              <div class="flex items-center space-x-2">
-                <h3 class="font-bold text-sm text-slate-900">${job.name}</h3>
+            <div class="space-y-1">
+              <div class="flex items-center space-x-2 flex-wrap gap-y-1">
+                <h3 class="font-bold text-base text-slate-900">${job.name || 'Anonymous Submitter'}</h3>
                 ${statusBadge}
                 ${typeLabel}
               </div>
-              <p class="text-xs text-slate-500 mt-1 truncate max-w-lg">${job.form_url}</p>
+              <p class="text-xs font-semibold text-indigo-700 flex items-center space-x-1">
+                <i class="fa-brands fa-google text-slate-400 mr-1"></i>
+                <span>Form: ${job.form_title || 'Google Form'}</span>
+              </p>
+              <div class="flex items-center space-x-2 text-xs text-slate-500 bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200 w-fit max-w-full mt-1">
+                <i class="fa-solid fa-link text-slate-400 shrink-0"></i>
+                <a href="${job.form_url}" target="_blank" class="truncate text-indigo-600 hover:underline max-w-xs sm:max-w-md">${job.form_url}</a>
+                <button onclick="copyToClipboard('${job.form_url}', this)" class="shrink-0 p-1 hover:bg-slate-200 rounded text-slate-500 hover:text-slate-800 transition" title="Copy Google Form Link">
+                  <i class="fa-solid fa-copy"></i>
+                </button>
+              </div>
             </div>
             <div class="flex items-center space-x-2 shrink-0">
               ${actionButtons}
             </div>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs text-slate-600">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs text-slate-600 pt-1">
             <div><strong>Alert Recipient:</strong> ${job.alert_email || '<span class="text-slate-400">None</span>'}</div>
             <div><strong>Timezone:</strong> ${job.timezone}</div>
-            <div><strong>Last Execution:</strong> ${job.last_run_at ? `${job.last_run_at} (${job.last_run_status})` : '<span class="text-slate-400">Pending Run</span>'}</div>
+            <div><strong>Last Execution:</strong> ${execInfo}</div>
           </div>
         `;
         container.appendChild(card);

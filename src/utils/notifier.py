@@ -20,11 +20,18 @@ class EmailNotifier:
         smtp_password: Optional[str] = None,
         recipient_email: Optional[str] = None,
     ):
-        self.smtp_host = smtp_host or os.getenv("SMTP_HOST", "smtp.gmail.com")
-        self.smtp_port = int(smtp_port or os.getenv("SMTP_PORT", 587))
-        self.smtp_user = smtp_user or os.getenv("SMTP_USER", "")
-        self.smtp_password = smtp_password or os.getenv("SMTP_PASSWORD", "")
+        from src.db import get_setting
+        db_user = get_setting("smtp_user", "")
+        db_pass = get_setting("smtp_password", "")
+        db_host = get_setting("smtp_host", "smtp.gmail.com")
+        db_port = get_setting("smtp_port", "587")
+
+        self.smtp_host = smtp_host or os.getenv("SMTP_HOST") or db_host or "smtp.gmail.com"
+        self.smtp_port = int(smtp_port or os.getenv("SMTP_PORT") or db_port or 587)
+        self.smtp_user = smtp_user or os.getenv("SMTP_USER") or db_user or ""
+        self.smtp_password = smtp_password or os.getenv("SMTP_PASSWORD") or db_pass or ""
         self.recipient_email = recipient_email or os.getenv("ALERT_RECIPIENT_EMAIL", self.smtp_user)
+        self.last_error: Optional[str] = None
 
     @property
     def is_configured(self) -> bool:
@@ -34,7 +41,8 @@ class EmailNotifier:
     def send_email(self, subject: str, body_text: str, body_html: Optional[str] = None) -> bool:
         """Send an email using configured SMTP settings."""
         if not self.is_configured:
-            logger.info("SMTP not configured. Skipping email notification.")
+            self.last_error = "SMTP credentials (smtp_user, smtp_password) are not configured."
+            logger.warning(f"SMTP not configured. Missing: user={'yes' if self.smtp_user else 'no'}, pass={'yes' if self.smtp_password else 'no'}, recipient={'yes' if self.recipient_email else 'no'}")
             return False
 
         msg = MIMEMultipart("alternative")
@@ -59,6 +67,7 @@ class EmailNotifier:
             logger.info(f"Notification email sent successfully to {self.recipient_email}")
             return True
         except Exception as e:
+            self.last_error = str(e)
             logger.error(f"Failed to send email notification: {e}")
             return False
 

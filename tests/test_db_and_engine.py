@@ -84,3 +84,31 @@ def test_log_execution_and_retrieval():
     assert len(logs) > 0
     assert logs[0]["status"] == "SUCCESS"
     assert logs[0]["alert_recipient"] == "alert@example.com"
+
+
+def test_past_one_time_job_expires():
+    from src.db import check_and_expire_past_jobs
+
+    # Create a job with target_date in the past
+    past_job_id = create_job(
+        name="Expired Event Form",
+        form_url="https://docs.google.com/forms/d/e/1FAIpQLSeTESTPAST/viewform",
+        fields={"entry.1": "Yes"},
+        days=[],
+        time="00:01",
+        timezone="Asia/Kolkata",
+        schedule_type="once",
+        target_date="2020-01-01",
+        form_title="Old Event Form"
+    )
+
+    # Trigger expiration check
+    check_and_expire_past_jobs()
+
+    job = get_job(past_job_id)
+    assert job is not None
+    assert job["last_run_status"] == "EXPIRED"
+    assert job["is_active"] is False
+
+    delete_job(past_job_id)
+

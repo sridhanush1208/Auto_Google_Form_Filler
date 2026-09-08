@@ -45,7 +45,6 @@ def init_db():
                 created_at TEXT NOT NULL
             )
         """)
-        # Auto-migrate existing database tables if columns are missing
         try:
             cursor.execute("ALTER TABLE jobs ADD COLUMN schedule_type TEXT DEFAULT 'recurring'")
         except Exception:
@@ -54,6 +53,16 @@ def init_db():
             cursor.execute("ALTER TABLE jobs ADD COLUMN target_date TEXT DEFAULT ''")
         except Exception:
             pass
+        try:
+            cursor.execute("ALTER TABLE jobs ADD COLUMN form_title TEXT DEFAULT ''")
+        except Exception:
+            pass
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS settings (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL
+            )
+        """)
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS logs (
                 id TEXT PRIMARY KEY,
@@ -82,6 +91,7 @@ def create_job(
     mode: str = "http",
     schedule_type: str = "recurring",
     target_date: str = "",
+    form_title: str = "",
     job_id: Optional[str] = None
 ) -> str:
     """Create or update a scheduled autonomous job."""
@@ -93,12 +103,13 @@ def create_job(
         cursor = conn.cursor()
         cursor.execute("""
             INSERT OR REPLACE INTO jobs (
-                id, name, form_url, mode, form_email, alert_email, fields, days, time, timezone, cron, schedule_type, target_date, is_active, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
+                id, name, form_url, form_title, mode, form_email, alert_email, fields, days, time, timezone, cron, schedule_type, target_date, is_active, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
         """, (
             jid,
-            name.strip() or "Untitled Form Job",
+            name.strip() or "Untitled Submitter",
             form_url.strip(),
+            form_title.strip() or "Google Form",
             mode.strip().lower(),
             form_email.strip(),
             alert_email.strip(),
@@ -115,9 +126,41 @@ def create_job(
     return jid
 
 
+def check_and_expire_past_jobs() -> None:
+    """Detect any one-time jobs whose scheduled date has passed without executing and mark them EXPIRED."""
+    now_utc = datetime.now(pytz.UTC)
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT id, schedule_type, target_date, time, timezone, is_active, last_run_status
+            FROM jobs
+            WHERE schedule_type = 'once' AND (last_run_status IS NULL OR (last_run_status != 'COMPLETED' AND last_run_status != 'EXPIRED'))
+        """)
+        rows = cursor.fetchall()
+        for r in rows:
+            target_date = r["target_date"]
+            time_str = r["time"] or "09:30"
+            tz_name = r["timezone"] or "Asia/Kolkata"
+            if target_date:
+                try:
+                    tz = pytz.timezone(tz_name)
+                    naive_dt = datetime.strptime(f"{target_date} {time_str}", "%Y-%m-%d %H:%M")
+                    scheduled_dt = tz.localize(naive_dt)
+                    if scheduled_dt < now_utc:
+                        cursor.execute("""
+                            UPDATE jobs
+                            SET last_run_status = 'EXPIRED', is_active = 0, last_run_at = ?
+                            WHERE id = ?
+                        """, (now_utc.strftime("%Y-%m-%d %H:%M:%S UTC"), r["id"]))
+                except Exception:
+                    pass
+        conn.commit()
+
+
 def get_all_jobs() -> List[Dict[str, Any]]:
-    """Retrieve all scheduled jobs."""
+    """Retrieve all scheduled jobs, automatically marking expired one-time runs."""
     init_db()
+    check_and_expire_past_jobs()
     with get_connection() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM jobs ORDER BY created_at DESC")
@@ -212,3 +255,33 @@ def get_logs(limit: int = 50) -> List[Dict[str, Any]]:
                 pass
             logs.append(l)
         return logs
+
+
+def get_setting(key: str, default: str = "") -> str:
+    """Retrieve a persistent setting value."""
+    init_db()
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT value FROM settings WHERE key = ?", (key,))
+        row = cursor.fetchone()
+        return row["value"] if row else default
+
+
+def set_setting(key: str, value: str) -> None:
+    """Save a persistent setting value."""
+    init_db()
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)", (key, str(value).strip()))
+        conn.commit()
+
+
+def get_all_settings() -> Dict[str, str]:
+    """Retrieve all persistent settings."""
+    init_db()
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT key, value FROM settings")
+        rows = cursor.fetchall()
+        return {r["key"]: r["value"] for r in rows}
+
