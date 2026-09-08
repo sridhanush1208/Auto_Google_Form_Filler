@@ -1,3 +1,13 @@
+---
+title: Auto Google Form Filler
+emoji: ⚡
+colorFrom: indigo
+colorTo: purple
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # ⚡ Auto Google Form Filler
 
 An autonomous, scheduled, dual-engine Google Form automation system with an interactive Web Dashboard and cloud-native execution. Submits your Google Form on specific days and times with your email and custom/dynamic field values—**completely autonomously, even when your computer is shut down or closed**.
