@@ -108,3 +108,47 @@ def test_parse_form_html_with_images():
     assert field["option_images"].get("Messi") == "https://docs.google.com/forms-images-rt/messi_thumb.png"
     assert field["option_images"].get("Ronaldo") == "https://docs.google.com/forms-images-rt/ronaldo_thumb.png"
 
+
+def test_parse_form_linear_scale():
+    mock_fb_data = [
+        "Scale Survey",
+        [
+            [
+                3001,
+                "Pick a number",
+                "Rate between 1 and 10",
+                5,  # Linear scale
+                [[1015116132, [["1"], ["2"], ["3"], ["4"], ["5"], ["6"], ["7"], ["8"], ["9"], ["10"]], 0, ["", ""]]]
+            ],
+            [
+                3002,
+                "Rate satisfaction",
+                "Scale 1 to 5",
+                5,  # Linear scale with bounds in sub[3] and no sub[1]
+                [[2025226233, None, 1, [1, 5]]]
+            ]
+        ]
+    ]
+
+    mock_html = f"""
+    <html>
+      <body>
+        <script>
+          var FB_PUBLIC_LOAD_DATA_ = {json.dumps(mock_fb_data)};
+        </script>
+      </body>
+    </html>
+    """
+
+    res = parse_form_html(mock_html)
+    f1 = res["fields"]["entry.1015116132"]
+    assert f1["type"] == "Linear scale"
+    assert f1["options"] == ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]
+    assert f1["required"] is False
+
+    f2 = res["fields"]["entry.2025226233"]
+    assert f2["type"] == "Linear scale"
+    assert f2["options"] == ["1", "2", "3", "4", "5"]
+    assert f2["required"] is True
+
+

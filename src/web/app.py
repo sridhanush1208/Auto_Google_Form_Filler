@@ -114,7 +114,11 @@ class TestEmailRequest(BaseModel):
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
-    return templates.TemplateResponse(request=request, name="index.html")
+    response = templates.TemplateResponse(request=request, name="index.html")
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
 
 
 @app.post("/api/inspect")
@@ -384,21 +388,26 @@ async def api_test_submit(req: TestSubmitRequest):
     res = filler.submit(fields=fields, email=email, dry_run=req.dry_run, tz_name=req.timezone)
 
     # If live submission and user provided an alert email, dispatch alert!
+    alert_status = None
     if not req.dry_run and alert_email:
-        notifier = EmailNotifier(recipient_email=alert_email)
-        now_str = get_current_time(req.timezone).strftime("%Y-%m-%d %H:%M:%S %Z")
-        if res.success:
-            notifier.notify_success(
-                form_url=form_url,
-                submitted_fields=res.submitted_payload,
-                timestamp=now_str
-            )
-        else:
-            notifier.notify_failure(
-                form_url=form_url,
-                error_message=res.error or res.message,
-                timestamp=now_str
-            )
+        try:
+            notifier = EmailNotifier(recipient_email=alert_email)
+            now_str = get_current_time(req.timezone).strftime("%Y-%m-%d %H:%M:%S %Z")
+            if res.success:
+                sent = notifier.notify_success(
+                    form_url=form_url,
+                    submitted_fields=res.submitted_payload,
+                    timestamp=now_str
+                )
+            else:
+                sent = notifier.notify_failure(
+                    form_url=form_url,
+                    error_message=res.error or res.message,
+                    timestamp=now_str
+                )
+            alert_status = "sent" if sent else f"failed: {notifier.last_error}"
+        except Exception as e:
+            alert_status = f"error: {e}"
 
     return {
         "success": res.success,
@@ -407,7 +416,8 @@ async def api_test_submit(req: TestSubmitRequest):
         "submitted_payload": res.submitted_payload,
         "error": res.error,
         "dry_run": res.dry_run,
-        "alert_sent_to": alert_email if not req.dry_run and alert_email else None
+        "alert_sent_to": alert_email if not req.dry_run and alert_email else None,
+        "alert_status": alert_status
     }
 
 

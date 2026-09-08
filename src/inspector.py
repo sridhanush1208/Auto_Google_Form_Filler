@@ -240,6 +240,24 @@ def parse_form_html(html: str) -> Dict[str, Any]:
                 for opt in sub[1]:
                     if isinstance(opt, list) and opt:
                         options.append(str(opt[0]))
+                    elif isinstance(opt, (str, int, float)):
+                        options.append(str(opt))
+
+            # Ensure Linear scale always has options
+            if q_type == "Linear scale" and not options:
+                # Check if sub[3] has scale bounds e.g. [1, 5] or [1, 10]
+                has_bounds = False
+                if len(sub) > 3 and isinstance(sub[3], list) and len(sub[3]) >= 2:
+                    try:
+                        low = int(sub[3][0])
+                        high = int(sub[3][1])
+                        if low < high and (high - low) <= 20:
+                            options = [str(i) for i in range(low, high + 1)]
+                            has_bounds = True
+                    except (ValueError, TypeError):
+                        pass
+                if not has_bounds:
+                    options = [str(i) for i in range(1, 11)]
 
             is_required = bool(sub[2] == 1 if len(sub) > 2 else False)
 

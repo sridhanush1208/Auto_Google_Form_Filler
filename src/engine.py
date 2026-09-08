@@ -62,39 +62,53 @@ def run_scheduled_job(job_id: str):
     status_str = "SUCCESS" if result.success else "FAILED"
     is_one_time = (job.get("schedule_type") == "once")
     exec_msg = result.message if result.success else (result.error or result.message or "Submission failed")
+
+    # Dispatch email notification to the user-entered alert email
+    email_note = ""
+    if alert_email:
+        try:
+            notifier = EmailNotifier(recipient_email=alert_email)
+            if result.success:
+                sent = notifier.notify_success(
+                    form_url=form_url,
+                    submitted_fields=result.submitted_payload,
+                    timestamp=timestamp_str
+                )
+            else:
+                sent = notifier.notify_failure(
+                    form_url=form_url,
+                    error_message=result.error or result.message,
+                    timestamp=timestamp_str
+                )
+            if sent:
+                email_note = f"Email sent to {alert_email}"
+                logger.info(f"Notification email dispatched successfully to {alert_email} for job [{job_id}]")
+            else:
+                email_note = f"Email failed: {notifier.last_error or 'SMTP dispatch error'}"
+                logger.warning(f"Notification email failed to send to {alert_email} for job [{job_id}]: {notifier.last_error}")
+        except Exception as ex:
+            email_note = f"Email error: {ex}"
+            logger.exception(f"Unexpected exception while sending alert email for job [{job_id}]: {ex}")
+    else:
+        logger.info(f"No alert_email set for job [{job_id}]. Skipping email dispatch.")
+
+    final_msg = f"{exec_msg} | {email_note}" if email_note else exec_msg
+
     if is_one_time:
         comp_status = "COMPLETED" if result.success else "FAILED"
-        update_job_last_run(job_id, comp_status, message=exec_msg)
+        update_job_last_run(job_id, comp_status, message=final_msg)
         toggle_job(job_id, False)
         unschedule_job_in_memory(job_id)
     else:
-        update_job_last_run(job_id, status_str, message=exec_msg)
+        update_job_last_run(job_id, status_str, message=final_msg)
 
     log_execution(
         job_id=job_id,
         status="COMPLETED" if (is_one_time and result.success) else status_str,
-        message=result.message,
+        message=final_msg,
         alert_recipient=alert_email,
         payload=result.submitted_payload
     )
-
-    # Dispatch email notification to the user-entered alert email
-    if alert_email:
-        notifier = EmailNotifier(recipient_email=alert_email)
-        if result.success:
-            notifier.notify_success(
-                form_url=form_url,
-                submitted_fields=result.submitted_payload,
-                timestamp=timestamp_str
-            )
-        else:
-            notifier.notify_failure(
-                form_url=form_url,
-                error_message=result.error or result.message,
-                timestamp=timestamp_str
-            )
-    else:
-        logger.info(f"No alert_email set for job [{job_id}]. Skipping email dispatch.")
 
 
 def schedule_job_in_memory(job: Dict[str, Any]):
