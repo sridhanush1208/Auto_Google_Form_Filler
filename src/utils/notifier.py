@@ -19,8 +19,14 @@ class EmailNotifier:
         smtp_user: Optional[str] = None,
         smtp_password: Optional[str] = None,
         recipient_email: Optional[str] = None,
+        webhook_url: Optional[str] = None,
+        resend_api_key: Optional[str] = None,
+        provider: Optional[str] = None,
     ):
         from src.db import get_setting
+        self.webhook_url = (webhook_url or os.getenv("EMAIL_WEBHOOK_URL") or get_setting("email_webhook_url", "")).strip()
+        self.resend_api_key = (resend_api_key or os.getenv("RESEND_API_KEY") or get_setting("resend_api_key", "")).strip()
+
         db_user = get_setting("smtp_user", "")
         db_pass = get_setting("smtp_password", "")
         db_host = get_setting("smtp_host", "smtp.gmail.com")
@@ -31,20 +37,131 @@ class EmailNotifier:
         self.smtp_user = (smtp_user or os.getenv("SMTP_USER") or db_user or "").strip()
         self.smtp_password = (smtp_password or os.getenv("SMTP_PASSWORD") or db_pass or "").strip()
         self.recipient_email = (recipient_email or os.getenv("ALERT_RECIPIENT_EMAIL", self.smtp_user) or "").strip()
+        
+        # Provider resolution ('webhook', 'resend', 'smtp')
+        if provider and provider.strip():
+            self.provider = provider.strip().lower()
+        elif webhook_url and webhook_url.strip():
+            self.provider = "webhook"
+        elif resend_api_key and resend_api_key.strip():
+            self.provider = "resend"
+        elif (smtp_user and smtp_user.strip()) or (smtp_password and smtp_password.strip()):
+            self.provider = "smtp"
+        else:
+            saved_prov = (os.getenv("EMAIL_PROVIDER") or get_setting("email_provider", "")).strip().lower()
+            if saved_prov in ("webhook", "resend", "smtp"):
+                self.provider = saved_prov
+            elif self.webhook_url:
+                self.provider = "webhook"
+            elif self.resend_api_key:
+                self.provider = "resend"
+            elif self.smtp_user and self.smtp_password:
+                self.provider = "smtp"
+            else:
+                self.provider = "webhook"
         self.last_error: Optional[str] = None
 
     @property
     def is_configured(self) -> bool:
-        """Check if required SMTP credentials are set."""
-        return bool(self.smtp_host and self.smtp_user and self.smtp_password and self.recipient_email)
+        """Check if active email delivery method is configured."""
+        if not self.recipient_email:
+            return False
+        if self.provider == "webhook" and self.webhook_url:
+            return True
+        if self.provider == "resend" and self.resend_api_key:
+            return True
+        if self.provider == "smtp" and (self.smtp_host and self.smtp_user and self.smtp_password):
+            return True
+        # Graceful fallback: check if any provider is fully configured
+        return bool(
+            self.webhook_url or 
+            self.resend_api_key or 
+            (self.smtp_host and self.smtp_user and self.smtp_password)
+        )
 
     def send_email(self, subject: str, body_text: str, body_html: Optional[str] = None) -> bool:
-        """Send an email using configured SMTP settings."""
+        """Send an email using Webhook (Port 443), Resend API (Port 443), or SMTP."""
         if not self.is_configured:
-            self.last_error = "SMTP credentials (smtp_user, smtp_password) are not configured."
-            logger.warning(f"SMTP not configured. Missing: user={'yes' if self.smtp_user else 'no'}, pass={'yes' if self.smtp_password else 'no'}, recipient={'yes' if self.recipient_email else 'no'}")
+            self.last_error = "Email alert service is not configured. Please set up a Google Apps Script Webhook, Resend API key, or SMTP credentials in Admin Settings."
+            logger.warning(self.last_error)
             return False
 
+        # Attempt sending via configured provider or fallback
+        if self.provider == "webhook" and self.webhook_url:
+            return self._send_webhook(subject, body_text, body_html)
+        elif self.provider == "resend" and self.resend_api_key:
+            return self._send_resend(subject, body_text, body_html)
+        elif self.provider == "smtp" and (self.smtp_user and self.smtp_password):
+            return self._send_smtp(subject, body_text, body_html)
+        # Automatic fallback
+        elif self.webhook_url:
+            return self._send_webhook(subject, body_text, body_html)
+        elif self.resend_api_key:
+            return self._send_resend(subject, body_text, body_html)
+        elif self.smtp_user and self.smtp_password:
+            return self._send_smtp(subject, body_text, body_html)
+        else:
+            self.last_error = "Email alert service is not configured."
+            return False
+
+    def _send_webhook(self, subject: str, body_text: str, body_html: Optional[str] = None) -> bool:
+        try:
+            import requests
+            resp = requests.post(
+                self.webhook_url,
+                json={
+                    "to": self.recipient_email,
+                    "subject": subject,
+                    "text": body_text,
+                    "html": body_html or body_text
+                },
+                headers={"Content-Type": "application/json"},
+                allow_redirects=True,
+                timeout=25
+            )
+            if resp.status_code in (200, 201, 204) or "success" in resp.text.lower():
+                logger.info(f"Notification email dispatched successfully via Webhook to {self.recipient_email}")
+                return True
+            else:
+                self.last_error = f"Webhook returned HTTP {resp.status_code}: {resp.text[:150]}"
+                logger.error(f"Webhook email failure: {self.last_error}")
+                return False
+        except Exception as e:
+            self.last_error = f"Webhook dispatch error: {e}"
+            logger.error(self.last_error)
+            return False
+
+    def _send_resend(self, subject: str, body_text: str, body_html: Optional[str] = None) -> bool:
+        try:
+            import requests
+            resp = requests.post(
+                "https://api.resend.com/emails",
+                headers={
+                    "Authorization": f"Bearer {self.resend_api_key}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "from": "Auto Form Filler <onboarding@resend.dev>",
+                    "to": [self.recipient_email],
+                    "subject": subject,
+                    "html": body_html or body_text,
+                    "text": body_text
+                },
+                timeout=25
+            )
+            if resp.status_code in (200, 201):
+                logger.info(f"Notification email dispatched successfully via Resend API to {self.recipient_email}")
+                return True
+            else:
+                self.last_error = f"Resend API returned HTTP {resp.status_code}: {resp.text[:150]}"
+                logger.error(f"Resend email failure: {self.last_error}")
+                return False
+        except Exception as e:
+            self.last_error = f"Resend API dispatch error: {e}"
+            logger.error(self.last_error)
+            return False
+
+    def _send_smtp(self, subject: str, body_text: str, body_html: Optional[str] = None) -> bool:
         msg = MIMEMultipart("alternative")
         msg["Subject"] = Header(subject, "utf-8")
         msg["From"] = f"Form Filler Alerts <{self.smtp_user}>"
@@ -69,6 +186,13 @@ class EmailNotifier:
                     server.send_message(msg, from_addr=self.smtp_user, to_addrs=[self.recipient_email])
             logger.info(f"Notification email sent successfully to {self.recipient_email}")
             return True
+        except OSError as e:
+            if "101" in str(e) or "unreachable" in str(e).lower():
+                self.last_error = "Render Free Tier blocks outbound SMTP ports (587/465/25) with [Errno 101] Network is unreachable. Please use Google Apps Script Webhook or Resend API in Email Alerts Settings."
+            else:
+                self.last_error = str(e)
+            logger.error(f"Failed to send email notification to {self.recipient_email}: {self.last_error}")
+            return False
         except Exception as e:
             self.last_error = str(e)
             logger.error(f"Failed to send email notification to {self.recipient_email}: {e}")

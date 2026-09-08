@@ -111,8 +111,9 @@ def test_api_logs_endpoint():
 
 
 def test_admin_smtp_endpoints():
-    # Save settings
+    # Save SMTP settings
     save_res = client.post("/api/admin/smtp", json={
+        "provider": "smtp",
         "smtp_user": "testbot@gmail.com",
         "smtp_password": "apppassword1234",
         "smtp_host": "smtp.gmail.com",
@@ -128,6 +129,20 @@ def test_admin_smtp_endpoints():
     assert data["configured"] is True
     assert data["smtp_user"] == "testbot@gmail.com"
     assert "smtp_password" not in data
+
+    # Save Google Apps Script Webhook settings
+    save_webhook_res = client.post("/api/admin/smtp", json={
+        "provider": "webhook",
+        "webhook_url": "https://script.google.com/macros/s/AKfycby_webhook/exec"
+    })
+    assert save_webhook_res.status_code == 200
+    get_webhook_res = client.get("/api/admin/smtp")
+    assert get_webhook_res.status_code == 200
+    webhook_data = get_webhook_res.json()
+    assert webhook_data["configured"] is True
+    assert webhook_data["provider"] == "webhook"
+    assert "AKfycby_webhook" in webhook_data["webhook_url"]
+
 
 
 def test_api_image_proxy():

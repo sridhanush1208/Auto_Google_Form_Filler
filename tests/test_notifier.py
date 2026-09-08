@@ -104,3 +104,60 @@ def test_notify_success_with_none_fields():
             timestamp="2026-09-08 23:59:00 IST"
         )
         assert success is True
+
+
+def test_notify_via_webhook_success():
+    notifier = EmailNotifier(
+        provider="webhook",
+        webhook_url="https://script.google.com/macros/s/AKfycbytest/exec",
+        recipient_email="alert@example.com"
+    )
+    assert notifier.is_configured is True
+
+    with patch("requests.post") as mock_post:
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.text = '{"status":"success"}'
+        mock_post.return_value = mock_resp
+
+        success = notifier.notify_success(
+            form_url="https://docs.google.com/forms/d/e/TEST/viewform",
+            submitted_fields={"entry.1": "Yes"},
+            timestamp="2026-09-09 01:00:00 IST"
+        )
+
+        assert success is True
+        mock_post.assert_called_once()
+        args, kwargs = mock_post.call_args
+        assert args[0] == "https://script.google.com/macros/s/AKfycbytest/exec"
+        assert kwargs["json"]["to"] == "alert@example.com"
+        assert "Succeeded" in kwargs["json"]["subject"]
+
+
+def test_notify_via_resend_success():
+    notifier = EmailNotifier(
+        provider="resend",
+        resend_api_key="re_test_key_12345",
+        recipient_email="alert@example.com"
+    )
+    assert notifier.is_configured is True
+
+    with patch("requests.post") as mock_post:
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.text = '{"id":"msg_123"}'
+        mock_post.return_value = mock_resp
+
+        success = notifier.notify_failure(
+            form_url="https://docs.google.com/forms/d/e/TEST/viewform",
+            error_message="Submission timed out",
+            timestamp="2026-09-09 01:00:00 IST"
+        )
+
+        assert success is True
+        mock_post.assert_called_once()
+        args, kwargs = mock_post.call_args
+        assert args[0] == "https://api.resend.com/emails"
+        assert kwargs["json"]["to"] == ["alert@example.com"]
+        assert "Failed" in kwargs["json"]["subject"]
+

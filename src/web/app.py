@@ -448,22 +448,33 @@ async def api_test_email(req: TestEmailRequest):
 
 
 class SmtpConfigRequest(BaseModel):
+    provider: Optional[str] = "webhook"  # "webhook", "resend", "smtp"
+    webhook_url: Optional[str] = ""
+    resend_api_key: Optional[str] = ""
     smtp_host: Optional[str] = "smtp.gmail.com"
     smtp_port: Optional[int] = 587
-    smtp_user: str
+    smtp_user: Optional[str] = ""
     smtp_password: Optional[str] = ""
     recipient_email: Optional[str] = ""
 
 
 @app.get("/api/admin/smtp")
 async def api_get_admin_smtp():
-    """Retrieve current SMTP status and sender email without exposing password."""
+    """Retrieve current email notification settings without exposing secrets."""
+    webhook_url = os.getenv("EMAIL_WEBHOOK_URL") or get_setting("email_webhook_url", "")
+    resend_key = os.getenv("RESEND_API_KEY") or get_setting("resend_api_key", "")
     user = os.getenv("SMTP_USER") or get_setting("smtp_user", "")
     host = os.getenv("SMTP_HOST") or get_setting("smtp_host", "smtp.gmail.com")
     port = os.getenv("SMTP_PORT") or get_setting("smtp_port", "587")
     has_pass = bool(os.getenv("SMTP_PASSWORD") or get_setting("smtp_password", ""))
+    provider = get_setting("email_provider", "webhook" if webhook_url else ("resend" if resend_key else "smtp"))
+
+    is_configured = bool(webhook_url or resend_key or (user and has_pass))
     return {
-        "configured": bool(user and has_pass),
+        "configured": is_configured,
+        "provider": provider,
+        "webhook_url": webhook_url,
+        "has_resend": bool(resend_key),
         "smtp_user": user,
         "smtp_host": host,
         "smtp_port": int(port)
@@ -472,65 +483,74 @@ async def api_get_admin_smtp():
 
 @app.post("/api/admin/smtp")
 async def api_save_admin_smtp(req: SmtpConfigRequest):
-    """Save SMTP sender credentials into persistent settings."""
-    if not req.smtp_user or not req.smtp_user.strip():
-        raise HTTPException(status_code=400, detail="Sender email address is required.")
-    
-    set_setting("smtp_user", req.smtp_user.strip())
-    set_setting("smtp_host", (req.smtp_host or "smtp.gmail.com").strip())
-    set_setting("smtp_port", str(req.smtp_port or 587).strip())
+    """Save email notification settings."""
+    if req.provider:
+        set_setting("email_provider", req.provider.strip().lower())
+    if req.webhook_url is not None:
+        set_setting("email_webhook_url", req.webhook_url.strip())
+    if req.resend_api_key and req.resend_api_key.strip():
+        set_setting("resend_api_key", req.resend_api_key.strip())
+    if req.smtp_user is not None:
+        set_setting("smtp_user", req.smtp_user.strip())
+    if req.smtp_host is not None:
+        set_setting("smtp_host", req.smtp_host.strip())
+    if req.smtp_port is not None:
+        set_setting("smtp_port", str(req.smtp_port).strip())
     if req.smtp_password and req.smtp_password.strip():
         set_setting("smtp_password", req.smtp_password.strip())
-    
     return {"success": True, "message": "Email settings saved successfully!"}
 
 
 @app.post("/api/admin/smtp/test")
 async def api_admin_test_email(req: SmtpConfigRequest):
     """Save and test email delivery live."""
-    user = req.smtp_user.strip() if req.smtp_user else (os.getenv("SMTP_USER") or get_setting("smtp_user", ""))
-    password = req.smtp_password.strip() if req.smtp_password else (os.getenv("SMTP_PASSWORD") or get_setting("smtp_password", ""))
-    recipient = (req.recipient_email or user).strip()
+    provider = req.provider or get_setting("email_provider", "webhook")
+    set_setting("email_provider", provider)
 
-    if not user or not password:
-        raise HTTPException(status_code=400, detail="Both Gmail address and 16-character App Password are required.")
-    
-    # Persist settings
-    set_setting("smtp_user", user)
+    if req.webhook_url is not None:
+        set_setting("email_webhook_url", req.webhook_url.strip())
+    if req.resend_api_key and req.resend_api_key.strip():
+        set_setting("resend_api_key", req.resend_api_key.strip())
+    if req.smtp_user:
+        set_setting("smtp_user", req.smtp_user.strip())
     if req.smtp_password and req.smtp_password.strip():
         set_setting("smtp_password", req.smtp_password.strip())
-    if req.smtp_host:
-        set_setting("smtp_host", req.smtp_host.strip())
-    if req.smtp_port:
-        set_setting("smtp_port", str(req.smtp_port))
+
+    webhook_url = req.webhook_url.strip() if req.webhook_url else get_setting("email_webhook_url", "")
+    resend_key = req.resend_api_key.strip() if req.resend_api_key else get_setting("resend_api_key", "")
+    user = req.smtp_user.strip() if req.smtp_user else (os.getenv("SMTP_USER") or get_setting("smtp_user", ""))
+    password = req.smtp_password.strip() if req.smtp_password else (os.getenv("SMTP_PASSWORD") or get_setting("smtp_password", ""))
+    recipient = (req.recipient_email or user or "test@example.com").strip()
+
+    if not recipient:
+        raise HTTPException(status_code=400, detail="Recipient email address is required for test verification.")
 
     notifier = EmailNotifier(
+        webhook_url=webhook_url if provider == "webhook" else None,
+        resend_api_key=resend_key if provider == "resend" else None,
         smtp_host=req.smtp_host or "smtp.gmail.com",
         smtp_port=req.smtp_port or 587,
-        smtp_user=user,
-        smtp_password=password,
+        smtp_user=user if provider == "smtp" else None,
+        smtp_password=password if provider == "smtp" else None,
         recipient_email=recipient
     )
 
     now = get_current_time().strftime("%Y-%m-%d %H:%M:%S")
     ok = notifier.send_email(
-        subject="✅ Auto Google Form Filler - SMTP Test Verification",
-        body_text=f"Success! Your Google Form email notifications are configured and working properly. Dispatched to {recipient} at {now}.",
+        subject="Auto Google Form Filler - Test Verification",
+        body_text=f"Success! Your Google Form email notifications are working properly. Dispatched to {recipient} at {now}.",
         body_html=f"""
         <div style="font-family:sans-serif;padding:20px;max-width:500px;border:1px solid #e2e8f0;border-radius:10px;">
-          <h2 style="color:#16a34a;margin-top:0;">✅ Email Alerts Are Active!</h2>
-          <p>Your SMTP credentials are valid and can send automated Google Form submission receipts.</p>
+          <h2 style="color:#16a34a;margin-top:0;">Email Alerts Are Working!</h2>
+          <p>Your email notification settings are valid and active.</p>
           <hr style="border:none;border-top:1px solid #e2e8f0;margin:16px 0;" />
-          <p style="font-size:13px;color:#64748b;"><strong>Sender:</strong> {user}<br/><strong>Recipient:</strong> {recipient}<br/><strong>Timestamp:</strong> {now}</p>
+          <p style="font-size:13px;color:#64748b;"><strong>Recipient:</strong> {recipient}<br/><strong>Timestamp:</strong> {now}</p>
         </div>
         """
     )
 
     if ok:
-        return {
-            "success": True,
-            "message": f"Test email sent successfully to {recipient}! Please check your inbox (and Spam folder)."
-        }
+        return {"success": True, "message": f"Test verification email sent successfully to {recipient}! Please check your inbox (and Spam folder)."}
     else:
-        err = notifier.last_error or "Unknown SMTP authentication error. Please verify your App Password."
-        raise HTTPException(status_code=500, detail=f"Failed to send email: {err}")
+        err = notifier.last_error or "Check your email configuration settings."
+        raise HTTPException(status_code=500, detail=f"Failed to send test email: {err}")

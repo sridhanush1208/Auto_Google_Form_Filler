@@ -341,35 +341,133 @@
         </div>
 
         <!-- Collapsible Email Settings Form -->
-        <div id="smtp-config-panel" class="hidden pt-3 border-t border-slate-100 space-y-3 text-xs">
-          <div class="bg-indigo-50/70 p-3 rounded-xl border border-indigo-100 text-slate-600 space-y-1">
-            <p class="font-bold text-indigo-950 flex items-center space-x-1">
-              <i class="fa-brands fa-google text-indigo-600 mr-1"></i> How to setup Gmail alerts in 1 minute:
-            </p>
-            <p>1. In your Gmail account, make sure 2-Step Verification is ON.</p>
-            <p>2. Create a 16-character App Password at <a href="https://myaccount.google.com/apppasswords" target="_blank" class="text-indigo-600 font-bold underline">myaccount.google.com/apppasswords</a> (App name: "Form Filler").</p>
-            <p>3. Enter your Gmail and 16-character password below and click <strong>"Save & Send Test Email"</strong>.</p>
-          </div>
-
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div class="space-y-1">
-              <label class="block font-bold text-slate-700 uppercase tracking-wider text-[10px]">Sender Gmail Address</label>
-              <input type="email" id="smtp-input-user" placeholder="yourbot@gmail.com" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50/50">
-            </div>
-            <div class="space-y-1">
-              <label class="block font-bold text-slate-700 uppercase tracking-wider text-[10px]">Gmail 16-character App Password</label>
-              <input type="password" id="smtp-input-pass" placeholder="xxxx xxxx xxxx xxxx" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50/50">
+        <div id="smtp-config-panel" class="hidden pt-3 border-t border-slate-100 space-y-4 text-xs">
+          <!-- Render Free Tier Notice -->
+          <div class="p-3 bg-amber-50 rounded-xl border border-amber-200 text-amber-900 flex items-start space-x-2.5">
+            <i class="fa-solid fa-triangle-exclamation text-amber-600 mt-0.5 shrink-0 text-sm"></i>
+            <div>
+              <p class="font-bold text-xs">Why emails fail on Render Free Tier:</p>
+              <p class="text-[11px] text-amber-800 mt-0.5 leading-relaxed">
+                Render explicitly blocks outbound SMTP ports (587, 465, 25) with <code>[Errno 101] Network is unreachable</code>. To send alert receipts effortlessly, use <strong>Google Apps Script Webhook (Port 443 HTTPS)</strong> which delivers directly from your Gmail account without firewall restrictions!
+              </p>
             </div>
           </div>
 
+          <!-- Provider Tabs -->
+          <div>
+            <label class="block font-bold text-slate-700 uppercase tracking-wider text-[10px] mb-1.5">Select Delivery System</label>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <button type="button" onclick="selectEmailProvider('webhook')" id="btn-provider-webhook" class="p-2.5 rounded-xl border-2 text-left flex flex-col justify-between transition border-indigo-600 bg-indigo-50/50">
+                <div class="flex items-center justify-between">
+                  <span class="font-bold text-xs text-indigo-900"><i class="fa-brands fa-google mr-1 text-indigo-600"></i> Apps Script</span>
+                  <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-100 text-emerald-700">Recommended</span>
+                </div>
+                <span class="text-[10px] text-slate-500 mt-1">Free HTTPS via Gmail (Bypasses Render firewall)</span>
+              </button>
+              <button type="button" onclick="selectEmailProvider('resend')" id="btn-provider-resend" class="p-2.5 rounded-xl border-2 text-left flex flex-col justify-between transition border-slate-200 hover:border-slate-300">
+                <div class="flex items-center justify-between">
+                  <span class="font-bold text-xs text-slate-800"><i class="fa-solid fa-paper-plane mr-1 text-slate-600"></i> Resend API</span>
+                  <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-100 text-slate-600">Port 443</span>
+                </div>
+                <span class="text-[10px] text-slate-500 mt-1">Transactional HTTPS email API</span>
+              </button>
+              <button type="button" onclick="selectEmailProvider('smtp')" id="btn-provider-smtp" class="p-2.5 rounded-xl border-2 text-left flex flex-col justify-between transition border-slate-200 hover:border-slate-300">
+                <div class="flex items-center justify-between">
+                  <span class="font-bold text-xs text-slate-800"><i class="fa-solid fa-envelope mr-1 text-slate-600"></i> Direct SMTP</span>
+                  <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-100 text-slate-600">Port 587</span>
+                </div>
+                <span class="text-[10px] text-slate-500 mt-1">Localhost / VPS / Paid Render only</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Provider 1: Google Apps Script Webhook -->
+          <div id="provider-panel-webhook" class="space-y-3">
+            <div class="bg-indigo-50/70 p-3.5 rounded-xl border border-indigo-100 text-slate-700 space-y-2">
+              <div class="flex items-center justify-between">
+                <p class="font-bold text-indigo-950 flex items-center text-xs">
+                  <i class="fa-brands fa-google text-indigo-600 mr-1.5"></i> 1-Minute Google Apps Script Setup Guide:
+                </p>
+                <button type="button" onclick="copyAppsScriptCode(this)" class="text-[10px] bg-white border border-indigo-200 hover:bg-indigo-50 px-2 py-1 rounded-lg font-bold text-indigo-700 transition">
+                  <i class="fa-regular fa-copy mr-1"></i> Copy Script Code
+                </button>
+              </div>
+              <ol class="list-decimal list-inside text-[11px] space-y-1 text-slate-600">
+                <li>Open <a href="https://script.google.com/home/start" target="_blank" class="text-indigo-600 font-bold underline">script.google.com</a> in your browser (logged into your Gmail).</li>
+                <li>Click <strong>New project</strong>, delete existing code, paste the snippet below, and save (<kbd class="px-1 py-0.5 bg-slate-200 rounded text-[10px]">Ctrl+S</kbd>).</li>
+                <li>Click <strong>Deploy &gt; New deployment</strong> &gt; click the ⚙️ gear icon &gt; choose <strong>Web app</strong>:
+                  <div class="pl-4 py-1 text-slate-700 text-[11px]">
+                    &bull; <strong>Execute as:</strong> <code>Me (your email)</code><br/>
+                    &bull; <strong>Who has access:</strong> <code>Anyone</code>
+                  </div>
+                </li>
+                <li>Click <strong>Deploy</strong> &rarr; <strong>Authorize access</strong> &rarr; copy the <strong>Web app URL</strong> and paste it below!</li>
+              </ol>
+              <textarea id="apps-script-code" readonly class="w-full h-24 p-2 bg-slate-900 text-emerald-400 font-mono text-[10px] rounded-lg border border-slate-700 select-all" onclick="this.select()">function doPost(e) {
+  try {
+    var data = JSON.parse(e.postData.contents);
+    GmailApp.sendEmail(data.to, data.subject, data.text, {
+      htmlBody: data.html
+    });
+    return ContentService.createTextOutput(JSON.stringify({status: "success"}))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({status: "error", error: err.toString()}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+function doGet(e) {
+  return ContentService.createTextOutput("Google Form Filler Email Service is Active")
+    .setMimeType(ContentService.MimeType.TEXT);
+}</textarea>
+            </div>
+
+            <div class="space-y-1">
+              <label class="block font-bold text-slate-700 uppercase tracking-wider text-[10px]">Google Apps Script Web App URL</label>
+              <input type="url" id="email-input-webhook-url" placeholder="https://script.google.com/macros/s/.../exec" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50/50 font-mono">
+            </div>
+          </div>
+
+          <!-- Provider 2: Resend API -->
+          <div id="provider-panel-resend" class="hidden space-y-3">
+            <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-slate-600 text-[11px] space-y-1">
+              <p class="font-bold text-slate-800"><i class="fa-solid fa-key mr-1 text-slate-500"></i> Resend HTTP API Key:</p>
+              <p>Sign up at <a href="https://resend.com" target="_blank" class="text-indigo-600 underline font-bold">resend.com</a>, create an API key, and paste it below.</p>
+              <p class="text-[10px] text-amber-700">⚠️ Note: On Resend's free tier without a custom domain, emails can only be sent to the email address registered on your Resend account.</p>
+            </div>
+            <div class="space-y-1">
+              <label class="block font-bold text-slate-700 uppercase tracking-wider text-[10px]">Resend API Key</label>
+              <input type="password" id="email-input-resend-key" placeholder="re_xxxxxxxxxxxxxx" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50/50 font-mono">
+            </div>
+          </div>
+
+          <!-- Provider 3: Direct SMTP -->
+          <div id="provider-panel-smtp" class="hidden space-y-3">
+            <div class="bg-rose-50 p-3 rounded-xl border border-rose-200 text-rose-800 text-[11px] space-y-1">
+              <p class="font-bold"><i class="fa-solid fa-ban mr-1"></i> Blocked on Render Free Tier:</p>
+              <p>Render Free blocks port 587 with [Errno 101]. Only use Direct SMTP on Localhost, VPS, or Paid hosting.</p>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div class="space-y-1">
+                <label class="block font-bold text-slate-700 uppercase tracking-wider text-[10px]">Sender Gmail Address</label>
+                <input type="email" id="smtp-input-user" placeholder="yourbot@gmail.com" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50/50">
+              </div>
+              <div class="space-y-1">
+                <label class="block font-bold text-slate-700 uppercase tracking-wider text-[10px]">Gmail 16-character App Password</label>
+                <input type="password" id="smtp-input-pass" placeholder="xxxx xxxx xxxx xxxx" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50/50">
+              </div>
+            </div>
+          </div>
+
+          <!-- Test Recipient & Action -->
           <div class="space-y-1">
             <label class="block font-bold text-slate-700 uppercase tracking-wider text-[10px]">Send Verification Test Email To</label>
-            <input type="email" id="smtp-input-recipient" placeholder="yourpersonal@gmail.com" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50/50">
+            <input type="email" id="smtp-input-recipient" placeholder="sridhanushsuru2006@gmail.com" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50/50">
           </div>
 
           <div class="flex items-center justify-between pt-1">
             <span id="smtp-test-result" class="text-xs"></span>
-            <button onclick="saveAndTestSmtp()" id="btn-save-test-smtp" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition flex items-center space-x-1.5 shadow-xs">
+            <button onclick="saveAndTestEmail()" id="btn-save-test-smtp" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition flex items-center space-x-1.5 shadow-xs">
               <i class="fa-solid fa-paper-plane"></i>
               <span>Save & Send Test Email</span>
             </button>
@@ -919,24 +1017,92 @@
       }
     }
 
+    let currentEmailProvider = 'webhook';
+
+    function selectEmailProvider(provider) {
+      currentEmailProvider = provider;
+      const btnWebhook = document.getElementById('btn-provider-webhook');
+      const btnResend = document.getElementById('btn-provider-resend');
+      const btnSmtp = document.getElementById('btn-provider-smtp');
+
+      const panelWebhook = document.getElementById('provider-panel-webhook');
+      const panelResend = document.getElementById('provider-panel-resend');
+      const panelSmtp = document.getElementById('provider-panel-smtp');
+
+      // Reset all buttons
+      [btnWebhook, btnResend, btnSmtp].forEach(b => {
+        if (b) {
+          b.className = 'p-2.5 rounded-xl border-2 text-left flex flex-col justify-between transition border-slate-200 hover:border-slate-300';
+        }
+      });
+      // Hide all panels
+      if (panelWebhook) panelWebhook.classList.add('hidden');
+      if (panelResend) panelResend.classList.add('hidden');
+      if (panelSmtp) panelSmtp.classList.add('hidden');
+
+      if (provider === 'webhook') {
+        if (btnWebhook) btnWebhook.className = 'p-2.5 rounded-xl border-2 text-left flex flex-col justify-between transition border-indigo-600 bg-indigo-50/50';
+        if (panelWebhook) panelWebhook.classList.remove('hidden');
+      } else if (provider === 'resend') {
+        if (btnResend) btnResend.className = 'p-2.5 rounded-xl border-2 text-left flex flex-col justify-between transition border-indigo-600 bg-indigo-50/50';
+        if (panelResend) panelResend.classList.remove('hidden');
+      } else if (provider === 'smtp') {
+        if (btnSmtp) btnSmtp.className = 'p-2.5 rounded-xl border-2 text-left flex flex-col justify-between transition border-indigo-600 bg-indigo-50/50';
+        if (panelSmtp) panelSmtp.classList.remove('hidden');
+      }
+    }
+
+    function copyAppsScriptCode(btn) {
+      const code = document.getElementById('apps-script-code').value;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(code).then(() => {
+          showToast('Google Apps Script code copied to clipboard!');
+          if (btn) {
+            const orig = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-check text-emerald-600 mr-1"></i> Copied!';
+            setTimeout(() => { btn.innerHTML = orig; }, 1500);
+          }
+        }).catch(() => fallbackCopy(code, btn));
+      } else {
+        fallbackCopy(code, btn);
+      }
+    }
+
     async function checkSmtpStatus() {
       const dot = document.getElementById('smtp-status-dot');
       const text = document.getElementById('smtp-status-text');
+      const webhookField = document.getElementById('email-input-webhook-url');
       const userField = document.getElementById('smtp-input-user');
       try {
         const res = await fetch('/api/admin/smtp');
         const data = await res.json();
+        
+        if (data.provider) {
+          selectEmailProvider(data.provider);
+        }
+        if (data.webhook_url && webhookField && !webhookField.value) {
+          webhookField.value = data.webhook_url;
+        }
+        if (data.smtp_user && userField && !userField.value) {
+          userField.value = data.smtp_user;
+        }
+
         if (data.configured) {
           dot.className = 'w-3 h-3 rounded-full bg-emerald-500 shrink-0';
-          text.innerHTML = `<span class="text-emerald-700 font-semibold">Active &bull; Sending automated alerts via</span> <strong class="text-slate-800">${data.smtp_user}</strong>`;
-          if (userField && !userField.value) userField.value = data.smtp_user;
+          if (data.provider === 'webhook') {
+            text.innerHTML = `<span class="text-emerald-700 font-semibold">Active &bull; Google Apps Script Webhook</span> (HTTPS Port 443 - Render Free Compatible)`;
+          } else if (data.provider === 'resend') {
+            text.innerHTML = `<span class="text-emerald-700 font-semibold">Active &bull; Resend API</span> (HTTPS Port 443)`;
+          } else {
+            text.innerHTML = `<span class="text-emerald-700 font-semibold">Active &bull; Direct SMTP</span> <strong class="text-slate-800">${data.smtp_user || ''}</strong>`;
+          }
         } else {
           dot.className = 'w-3 h-3 rounded-full bg-rose-500 shrink-0';
-          text.innerHTML = `<span class="text-rose-600 font-semibold">Not Configured</span> &bull; Confirmation emails cannot be delivered until Gmail App Password is configured below.`;
+          text.innerHTML = `<span class="text-rose-600 font-semibold">Not Configured</span> &bull; Setup Google Apps Script Webhook below to receive automated alert emails.`;
         }
       } catch (e) {
         dot.className = 'w-3 h-3 rounded-full bg-slate-300 shrink-0';
-        text.innerText = 'Unable to check SMTP status.';
+        text.innerText = 'Unable to check email service status.';
       }
     }
 
@@ -952,19 +1118,38 @@
       }
     }
 
-    async function saveAndTestSmtp() {
-      const user = document.getElementById('smtp-input-user').value.trim();
-      const pass = document.getElementById('smtp-input-pass').value.trim();
-      const recipient = document.getElementById('smtp-input-recipient').value.trim() || user;
+    async function saveAndTestEmail() {
+      const recipient = (document.getElementById('smtp-input-recipient').value || '').trim();
+      const webhookUrl = (document.getElementById('email-input-webhook-url').value || '').trim();
+      const resendKey = (document.getElementById('email-input-resend-key').value || '').trim();
+      const user = (document.getElementById('smtp-input-user').value || '').trim();
+      const pass = (document.getElementById('smtp-input-pass').value || '').trim();
       const statusSpan = document.getElementById('smtp-test-result');
 
-      if (!user) {
-        showToast('Please enter your Gmail address', false);
+      if (!recipient) {
+        showToast('Please enter a recipient email address for the test', false);
         return;
       }
-      if (!pass) {
-        showToast('Please enter your 16-character Gmail App Password', false);
-        return;
+
+      if (currentEmailProvider === 'webhook') {
+        if (!webhookUrl) {
+          showToast('Please enter your Google Apps Script Web App URL', false);
+          return;
+        }
+        if (!webhookUrl.startsWith('http://') && !webhookUrl.startsWith('https://')) {
+          showToast('Invalid Webhook URL. It must begin with https://', false);
+          return;
+        }
+      } else if (currentEmailProvider === 'resend') {
+        if (!resendKey) {
+          showToast('Please enter your Resend API Key', false);
+          return;
+        }
+      } else if (currentEmailProvider === 'smtp') {
+        if (!user || !pass) {
+          showToast('Please enter both your Gmail address and App Password', false);
+          return;
+        }
       }
 
       const btn = document.getElementById('btn-save-test-smtp');
@@ -977,6 +1162,9 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            provider: currentEmailProvider,
+            webhook_url: webhookUrl,
+            resend_api_key: resendKey,
             smtp_user: user,
             smtp_password: pass,
             recipient_email: recipient
